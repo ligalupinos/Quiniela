@@ -857,7 +857,6 @@ function adminAjustes() {
   return '<div class="card"><h2>Ajustes</h2>'
     + '<div class="campo"><label>Nombre de la liga</label><input id="c-nombre" value="' + esc(c.nombre) + '"></div>'
     + '<div class="campo"><label>Subtítulo / temporada</label><input id="c-temp" value="' + esc(c.temporada) + '"></div>'
-    + '<label class="check"><input type="checkbox" id="c-mostrar"' + (c.mostrarAntesCierre ? ' checked' : '') + '> Enseñar los pronósticos de todos antes del cierre</label>'
     + '<button class="btn btn-oro" id="c-guardar">💾 Guardar ajustes</button></div>'
     + '<div class="card"><h3>Contraseña de administrador</h3><div class="campo"><label>Nueva contraseña</label><input type="password" id="c-pass" autocomplete="new-password"></div><button class="btn btn-claro" id="c-cambiar">Cambiar contraseña</button></div>'
     + '<div class="card"><h3>Importar jornadas históricas</h3><p class="muted">Pega aquí el texto de importación (formato JSON). Las jornadas con el mismo número se sustituyen.</p>'
@@ -984,7 +983,7 @@ function enlazarAdmin() {
   }
   if (tab === 'ajustes') {
     $('#c-guardar').onclick = () => conCarga($('#c-guardar'), async () => {
-      await api('guardarConfig', { token: S.admin, config: { nombre: $('#c-nombre').value, temporada: $('#c-temp').value, mostrarAntesCierre: $('#c-mostrar').checked } });
+      await api('guardarConfig', { token: S.admin, config: { nombre: $('#c-nombre').value, temporada: $('#c-temp').value, mostrarAntesCierre: true } });
       await recargarAdmin(); render(); toast('Ajustes guardados');
     });
     $('#c-cambiar').onclick = () => conCarga($('#c-cambiar'), async () => {
@@ -1065,7 +1064,7 @@ function crearDemo() {
   const dias = ['Sáb. 14:00', 'Sáb. 16:15', 'Sáb. 18:30', 'Sáb. 21:00', 'Dom. 14:00', 'Dom. 16:15', 'Dom. 18:30', 'Dom. 21:00', 'Lun. 21:00'];
   const signo = () => { const r = rnd(); return r < .45 ? '1' : r < .75 ? 'X' : '2'; };
   const gol = () => elige(['0', '1', '1', '2', '2', 'M']);
-  const db = { config: { nombre: 'Liga Lupinos', temporada: 'Temporada 2026/27 · DEMO', mostrarAntesCierre: false }, admin: 'lupinos', jugadores: [], jornadas: [], registro: [] };
+  const db = { config: { nombre: 'Liga Lupinos', temporada: 'Temporada 2026/27 · DEMO', mostrarAntesCierre: true }, admin: 'lupinos', jugadores: [], jornadas: [], registro: [] };
   nombres.forEach((n, i) => db.jugadores.push({ id: 'd' + i, nombre: n, columna: i + 1, activo: true, pin: '1234' }));
   const ahora = Date.now();
   for (let n = 1; n <= 5; n++) {
