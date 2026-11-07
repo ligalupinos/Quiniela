@@ -97,6 +97,7 @@ input,select,textarea{font:inherit}
 .btn-verde{background:var(--cesped);color:#fff;box-shadow:0 4px 0 #063a19}
 .btn-claro{background:#e9f0ea;color:var(--tinta)}
 .btn-rojo{background:var(--ko);color:#fff}
+.btn-wa{background:#25D366;color:#053d1f;box-shadow:0 4px 0 #128C7E}
 .btn-peq{padding:7px 12px;font-size:13px;border-radius:10px;box-shadow:none}
 .btn-bloque{width:100%}
 .acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -482,11 +483,12 @@ function vistaJornada() {
   if (ocultos) {
     html += '<div class="card"><h3>¿Quién ha enviado ya?</h3><div class="enviados">'
       + jugs.filter(g => g.activo).map(g => '<span class="enviado' + (j.pronosticos[g.id] !== undefined ? ' si' : '') + '">' + (j.pronosticos[g.id] !== undefined ? '✓ ' : '⏳ ') + esc(g.nombre) + '</span>').join('')
-      + '</div><p class="muted" style="margin-top:10px">Los pronósticos se descubren cuando se cierre la jornada.</p></div>';
+      + '</div><p class="muted" style="margin-top:10px">Los pronósticos se descubren cuando se cierre la jornada.</p>' + botonWhatsApp(j) + '</div>';
     html += '<div class="card"><h3>Los partidos</h3>' + tablaBoleto(j, []) + '</div>';
   } else {
+    if (!j.cerrada && !j.anulada) html += tarjetaEnviados(j, jugs);
     const conPron = jugs.filter(g => j.pronosticos[g.id] !== undefined || g.activo);
-    html += '<div class="card"><h3>Pronósticos</h3>' + tablaBoleto(j, conPron) + leyenda(j) + '</div>';
+    html += '<div class="card"><h3>Pronósticos</h3>' + tablaBoleto(j, conPron) + leyenda(j) + botonWhatsApp(j) + '</div>';
   }
   return html;
 }
@@ -524,6 +526,53 @@ function tablaBoleto(j, jugs) {
   }
   return h + '</table></div>';
 }
+/* ─────────────── Enviar columnas por WhatsApp ─────────────── */
+function tarjetaEnviados(j, jugs) {
+  const activos = jugs.filter(g => g.activo);
+  const faltan = activos.filter(g => j.pronosticos[g.id] === undefined);
+  return '<div class="card"><h3>' + (faltan.length ? '⏳ Faltan ' + faltan.length + ' por rellenar' : '✅ ¡Ya estáis todos! A echarla') + '</h3><div class="enviados">'
+    + activos.map(g => '<span class="enviado' + (j.pronosticos[g.id] !== undefined ? ' si' : '') + '">' + (j.pronosticos[g.id] !== undefined ? '✓ ' : '⏳ ') + esc(g.nombre) + '</span>').join('')
+    + '</div></div>';
+}
+function botonWhatsApp(j) {
+  if (j.anulada || !Object.keys(j.pronosticos).length) return '';
+  return '<div class="acciones"><button class="btn btn-wa btn-bloque" id="b-wa">📲 Enviar columnas por WhatsApp</button></div>';
+}
+function mensajeWhatsApp(j, pron) {
+  const cols = S.datos.jugadores.filter(g => g.activo)
+    .sort((a, b) => (a.columna || 99) - (b.columna || 99) || a.nombre.localeCompare(b.nombre))
+    .map((g, k) => ({ n: String(g.columna || k + 1), s: Array.isArray(pron[g.id]) ? pron[g.id] : null }));
+  const w = Math.max(1, ...cols.map(c => c.n.length));
+  const celda = v => String(v).padEnd(w);
+  // Pleno al 15 más votado (va solo en la columna 1)
+  const cuenta = {};
+  cols.forEach(c => { const v = c.s && c.s[14]; if (/^[012M]-[012M]$/.test(v || '')) cuenta[v] = (cuenta[v] || 0) + 1; });
+  const max = Math.max(0, ...Object.values(cuenta));
+  const top = Object.keys(cuenta).filter(k => cuenta[k] === max);
+  const lineas = ['⚽ *' + (S.datos.config.nombre || 'Liga Lupinos').toUpperCase() + ' · J' + j.numero + '*', '```'];
+  lineas.push('    ' + cols.map(c => celda(c.n)).join(' '));
+  for (let i = 0; i < 14; i++) lineas.push(String(i + 1).padStart(2) + '  ' + cols.map(c => celda(c.s && c.s[i] ? c.s[i] : '·')).join(' ').trimEnd());
+  lineas.push('15  ' + (!max ? '·' : top.length === 1 ? top[0] : '¿?'));
+  lineas.push('```');
+  if (max && top.length > 1) lineas.push('⭐ Pleno al 15: empate entre *' + top.join('* y *') + '* (' + (max === 1 ? '1 voto' : max + ' votos') + ' cada uno). ¡Elegid vosotros!');
+  else if (max) lineas.push('⭐ Pleno al 15 (columna 1): *' + top[0] + '* (' + (max === 1 ? '1 voto' : max + ' votos') + ')');
+  const faltan = cols.filter(c => !c.s).map(c => c.n);
+  if (faltan.length) lineas.push('⚠️ Sin pronóstico: columna ' + faltan.join(', '));
+  return lineas.join('\n');
+}
+async function enviarWhatsApp(boton) {
+  const j = getJ(S.jSel);
+  let pron = j.pronosticos;
+  if (Object.values(pron).some(p => p === 'oculto')) {
+    if (!S.admin) return toast('Los pronósticos están ocultos hasta el cierre. Entra en Admin para enviarlos.', true);
+    const datos = await conCarga(boton, () => api('adminDatos', { token: S.admin }));
+    const ja = datos && datos.jornadas.find(x => x.numero === j.numero);
+    if (!ja) return;
+    pron = ja.pronosticos;
+  }
+  window.open('https://wa.me/?text=' + encodeURIComponent(mensajeWhatsApp(j, pron)), '_blank');
+}
+
 function leyenda(j) {
   return '<div class="leyenda"><span><span class="sg ok">1</span> Acierto</span><span><span class="sg ko">2</span> Fallo</span><span><span class="sg">X</span> Pendiente</span>'
     + '<span>P15: goles local-visitante (0, 1, 2, M)</span></div>';
@@ -803,6 +852,8 @@ function enlazar() {
   }
   const br = $('#b-rellenar');
   if (br) br.onclick = abrirRellenar;
+  const bw = $('#b-wa');
+  if (bw) bw.onclick = () => enviarWhatsApp(bw);
   if (S.vista === 'admin') enlazarAdmin();
 }
 
