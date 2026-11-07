@@ -550,9 +550,12 @@ function mensajeWhatsApp(j, pron) {
   const max = Math.max(0, ...Object.values(cuenta));
   const top = Object.keys(cuenta).filter(k => cuenta[k] === max);
   const lineas = ['⚽ *' + (S.datos.config.nombre || 'Liga Lupinos').toUpperCase() + ' · J' + j.numero + '*', '```'];
-  lineas.push('    ' + cols.map(c => celda(c.n)).join(' '));
-  for (let i = 0; i < 14; i++) lineas.push(String(i + 1).padStart(2) + '  ' + cols.map(c => celda(c.s && c.s[i] ? c.s[i] : '·')).join(' ').trimEnd());
-  lineas.push('15  ' + (!max ? '·' : top.length === 1 ? top[0] : '¿?'));
+  const sep = '   ';
+  const cabecera = cols.map(c => celda(c.n)).join(sep).trimEnd();
+  lineas.push(cabecera);
+  lineas.push('─'.repeat(cabecera.length));
+  for (let i = 0; i < 14; i++) lineas.push(cols.map(c => celda(c.s && c.s[i] ? c.s[i] : '·')).join(sep).trimEnd());
+  lineas.push(!max ? '·' : top.length === 1 ? top[0] : '¿?');
   lineas.push('```');
   if (max && top.length > 1) lineas.push('⭐ Pleno al 15: empate entre *' + top.join('* y *') + '* (' + (max === 1 ? '1 voto' : max + ' votos') + ' cada uno). ¡Elegid vosotros!');
   else if (max) lineas.push('⭐ Pleno al 15 (columna 1): *' + top[0] + '* (' + (max === 1 ? '1 voto' : max + ' votos') + ')');
