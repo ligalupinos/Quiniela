@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1f14">
+<title>Liga Lupinos</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 58 12v20c0 15-11 25-26 29C17 57 6 47 6 32V12z' fill='%230b5d2a' stroke='%23f2c230' stroke-width='4'/%3E%3Ctext x='32' y='42' font-size='24' text-anchor='middle' fill='%23f2c230' font-family='Arial' font-weight='bold'%3ELL%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noche:#0b1f14; --noche2:#132c1e;
+  --cesped:#0b5d2a; --cesped2:#0f6b32; --cesped-claro:#1f8a47;
+  --tiza:#fbfdf8; --linea:#dfe8e0; --gris:#6b7a70; --tinta:#0f1d14;
+  --oro:#f2c230; --plata:#c9d1d6; --bronce:#d08a4c;
+  --ok:#14874a; --ok-bg:#d6f5e1; --ko:#c0392b; --ko-bg:#fde3e0;
+  --radio:18px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--tinta);
+  background:#0d5229;
+  background-image:
+    radial-gradient(circle at 50% 0, rgba(255,255,255,.08), transparent 55%),
+    repeating-linear-gradient(180deg,#0f5a2e 0 110px,#0c5028 110px 220px);
+  background-attachment:fixed; min-height:100vh;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit}
+.contenedor{max-width:980px;margin:0 auto;padding:0 16px}
+
+/* ---------- Cabecera tipo marcador ---------- */
+.cabecera{background:linear-gradient(180deg,var(--noche),var(--noche2));color:#fff;border-bottom:3px solid var(--oro);
+  box-shadow:0 6px 20px rgba(0,0,0,.35);position:sticky;top:0;z-index:20}
+.cabecera .contenedor{display:flex;align-items:center;gap:12px;padding-top:10px;padding-bottom:10px}
+.escudo{width:46px;height:52px;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.titulo{font-family:'Bebas Neue',Impact,sans-serif;font-size:32px;letter-spacing:2px;line-height:.9;margin:0}
+.titulo span{color:var(--oro)}
+.subtitulo{font-size:12px;opacity:.75;letter-spacing:.5px;margin-top:2px}
+.cabecera .espacio{flex:1}
+.chip-sesion{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:600;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.demo{background:var(--oro);color:var(--noche);text-align:center;font-size:12px;font-weight:700;padding:5px 10px}
+
+/* ---------- Navegación inferior ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--noche);border-top:2px solid var(--oro);
+  display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+.nav button{flex:1;max-width:200px;background:none;border:0;color:#9db5a5;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.nav button svg{width:24px;height:24px}
+.nav button.activo{color:var(--oro)}
+.nav button.activo svg{transform:translateY(-1px)}
+
+/* ---------- Tarjetas ---------- */
+.card{background:var(--tiza);border-radius:var(--radio);box-shadow:0 10px 30px rgba(0,0,0,.25);padding:16px;margin:16px 0}
+.card h2,.card h3{font-family:'Bebas Neue',Impact,sans-serif;letter-spacing:1px;font-weight:400;margin:0 0 10px}
+.card h2{font-size:28px}.card h3{font-size:22px}
+.muted{color:var(--gris);font-size:13px}
+.aviso{background:#fff7d6;border:1px solid #f2dc8a;color:#6b5300;border-radius:12px;padding:10px 12px;font-size:13px;margin:10px 0}
+.error{background:var(--ko-bg);border:1px solid #f3b8b1;color:#8f2418;border-radius:12px;padding:10px 12px;font-size:13px}
+
+/* ---------- Selector de jornadas ---------- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:14px 2px 4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.18);color:#fff;border-radius:12px;padding:6px 12px;font-family:'Bebas Neue',Impact,sans-serif;font-size:20px;letter-spacing:1px;position:relative}
+.chip.activo{background:var(--oro);color:var(--noche);border-color:var(--oro)}
+.chip.anulada{opacity:.55;text-decoration:line-through}
+.pill.nojuega{background:#e0e4e1;color:#4d5a52}
+.chip .punto{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#3ddc84;border:2px solid var(--cesped)}
+
+/* ---------- Marcador de jornada ---------- */
+.marcador{background:linear-gradient(135deg,var(--noche),#16382a);color:#fff;border-radius:var(--radio);padding:18px;margin:12px 0 0;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.marcador:after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border:3px solid rgba(255,255,255,.07);border-radius:50%}
+.marcador .fila{display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:relative;z-index:1}
+.marcador .num{font-family:'Bebas Neue',Impact,sans-serif;font-size:56px;line-height:.85;color:var(--oro)}
+.marcador .num small{display:block;font-size:16px;color:#fff;opacity:.7;letter-spacing:2px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700;letter-spacing:.3px}
+.pill.abierta{background:#3ddc84;color:#05351a}
+.pill.cerrada{background:#f2c230;color:#3d2e00}
+.pill.final{background:#e8eef0;color:#25343b}
+.pill .led{width:8px;height:8px;border-radius:50%;background:currentColor;animation:latido 1.4s infinite}
+@keyframes latido{50%{opacity:.25}}
+.marcador .datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px;position:relative;z-index:1}
+.dato{background:rgba(255,255,255,.07);border-radius:12px;padding:8px 10px}
+.dato b{display:block;font-family:'Bebas Neue',Impact,sans-serif;font-size:24px;letter-spacing:1px;font-weight:400}
+.dato span{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.6px}
+.progreso{height:6px;background:rgba(255,255,255,.15);border-radius:6px;margin-top:6px;overflow:hidden}
+.progreso i{display:block;height:100%;background:var(--oro);border-radius:6px}
+
+/* ---------- Botones ---------- */
+.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-oro{background:var(--oro);color:var(--noche);box-shadow:0 4px 0 #b88f13}
+.btn-verde{background:var(--cesped);color:#fff;box-shadow:0 4px 0 #063a19}
+.btn-claro{background:#e9f0ea;color:var(--tinta)}
+.btn-rojo{background:var(--ko);color:#fff}
+.btn-peq{padding:7px 12px;font-size:13px;border-radius:10px;box-shadow:none}
+.btn-bloque{width:100%}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.cta{margin:14px 0 0}
+
+/* ---------- Tabla de pronósticos (boleto) ---------- */
+.tabla-wrap{overflow-x:auto;margin:0 -16px;padding:0 16px;-webkit-overflow-scrolling:touch}
+table.boleto{border-collapse:separate;border-spacing:0;width:100%;font-size:14px}
+.boleto th,.boleto td{text-align:center;padding:0;border-bottom:1px solid var(--linea);height:42px}
+.boleto thead th{border-bottom:2px solid var(--cesped);vertical-align:bottom;height:auto;padding:4px 0 8px}
+.boleto .c-partido{position:sticky;left:0;background:var(--tiza);z-index:2;text-align:left;min-width:142px;max-width:170px;padding-right:8px;box-shadow:6px 0 8px -8px rgba(0,0,0,.35)}
+.boleto thead .c-partido{z-index:3;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--gris)}
+.vertical{writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:700;white-space:nowrap;max-height:110px;overflow:hidden;text-overflow:ellipsis;margin:0 auto}
+.boleto .c-jug{min-width:40px}
+.boleto .c-res{min-width:48px;background:#f1f6f1}
+.boleto thead .c-res .vertical{color:var(--cesped)}
+.partido{display:flex;align-items:center;gap:8px}
+.partido .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--noche);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.partido.pleno .n{background:var(--oro);color:var(--noche)}
+.partido .eq{line-height:1.15;font-size:12px;font-weight:600;overflow:hidden}
+.partido .eq small{display:block;font-weight:500;color:var(--gris);font-size:10.5px}
+.sg{display:inline-grid;place-items:center;min-width:28px;height:28px;padding:0 4px;border-radius:8px;font-weight:800;font-size:13px;background:#eef2ee;color:#2b3a30}
+.sg.ok{background:var(--ok-bg);color:var(--ok);box-shadow:inset 0 0 0 2px var(--ok)}
+.sg.ko{background:var(--ko-bg);color:var(--ko);opacity:.85}
+.sg.res{background:var(--cesped);color:#fff}
+.sg.vacio{background:transparent;color:#b7c2ba}
+.sg.pleno{font-size:11px;min-width:34px}
+.boleto tfoot td{border:0;height:48px;font-family:'Bebas Neue',Impact,sans-serif;font-size:24px}
+.boleto tfoot .c-partido{font-family:Inter,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--gris)}
+.boleto tfoot .top{color:var(--ok)}
+.boleto .c-cons{min-width:48px;background:#fff8dc}
+.boleto thead .c-cons .vertical{color:#8a6a00}
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--gris);margin-top:12px;align-items:center}
+.leyenda .sg{min-width:22px;height:22px;font-size:11px}
+
+.enviados{display:flex;flex-wrap:wrap;gap:8px}
+.enviado{border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;background:#eef2ee;color:var(--gris)}
+.enviado.si{background:var(--ok-bg);color:var(--ok)}
+
+/* ---------- Clasificación ---------- */
+.podio{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:8px;margin:18px 0 6px}
+.escalon{text-align:center;color:#fff}
+.escalon .nombre{font-weight:700;font-size:13px;margin:6px 4px;line-height:1.15;min-height:30px;display:flex;align-items:flex-end;justify-content:center;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.escalon .bloque{border-radius:14px 14px 0 0;padding:10px 4px;font-family:'Bebas Neue',Impact,sans-serif;box-shadow:inset 0 -6px 0 rgba(0,0,0,.15)}
+.escalon .bloque .p{font-size:34px;line-height:1}
+.escalon .bloque .pts{font-size:16px;letter-spacing:1px;opacity:.85}
+.e1 .bloque{background:linear-gradient(180deg,#ffd95a,var(--oro));color:#4a3700;height:130px}
+.e2 .bloque{background:linear-gradient(180deg,#eef2f4,var(--plata));color:#2f3a40;height:100px}
+.e3 .bloque{background:linear-gradient(180deg,#e9a46a,var(--bronce));color:#43230a;height:80px}
+.medalla{font-size:30px;line-height:1}
+table.clasif{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:15px}
+.clasif th{font-size:11px;text-transform:uppercase;color:var(--gris);letter-spacing:.6px;font-weight:700;text-align:center;padding:0 6px}
+.clasif th:nth-child(2){text-align:left}
+.clasif td{background:#fff;padding:10px 6px;text-align:center;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea)}
+.clasif td:first-child{border-left:1px solid var(--linea);border-radius:12px 0 0 12px;font-family:'Bebas Neue',Impact,sans-serif;font-size:22px;width:46px}
+.clasif td:last-child{border-right:1px solid var(--linea);border-radius:0 12px 12px 0}
+.clasif td.nom{text-align:left;font-weight:700}
+.clasif td.pts{font-family:'Bebas Neue',Impact,sans-serif;font-size:26px;letter-spacing:1px}
+.clasif tr.lider td{background:var(--ok-bg);border-color:#9fdcb7;color:#0b5a30}
+.clasif tr.colista td{background:var(--ko-bg);border-color:#f3b8b1;color:#8f2418}
+.clasif .flecha{font-size:11px;font-weight:700}
+.matriz{border-collapse:separate;border-spacing:0;font-size:13px;width:100%}
+.matriz th,.matriz td{padding:7px 6px;text-align:center;border-bottom:1px solid var(--linea);white-space:nowrap}
+.matriz th{font-size:11px;color:var(--gris);text-transform:uppercase}
+.matriz .c-nom{position:sticky;left:0;background:var(--tiza);text-align:left;font-weight:700;max-width:140px;overflow:hidden;text-overflow:ellipsis;box-shadow:6px 0 8px -8px rgba(0,0,0,.35)}
+.matriz td.mejor{background:#fff3c4;font-weight:800;color:#7a5a00}
+.matriz td.total{font-weight:800}
+
+/* ---------- Formularios ---------- */
+.campo{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.campo label{font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.5px}
+.campo input,.campo select,.campo textarea,.inp{border:2px solid var(--linea);background:#fff;border-radius:12px;padding:11px 12px;font-size:16px;color:var(--tinta);width:100%}
+.campo input:focus,.campo select:focus,.campo textarea:focus,.inp:focus{outline:none;border-color:var(--cesped-claro)}
+.pin{letter-spacing:12px;text-align:center;font-size:26px !important;font-weight:800}
+.check{display:flex;align-items:center;gap:10px;font-size:14px;margin:6px 0 12px}
+.check input{width:20px;height:20px;accent-color:var(--cesped)}
+.rejilla2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ---------- Selector 1X2 ---------- */
+.sel-fila{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--linea)}
+.sel-fila .partido{flex:1;min-width:0}
+.sel-fila .partido .eq{font-size:13px}
+.botones{display:flex;gap:6px;flex:none}
+.sig{width:42px;height:42px;border-radius:50%;border:2px solid #c9d6cb;background:#fff;font-weight:800;font-size:16px;color:#2b3a30;transition:all .12s}
+.sig.on{background:var(--cesped);border-color:var(--cesped);color:#fff;transform:scale(1.06);box-shadow:0 3px 8px rgba(11,93,42,.35)}
+.pleno-caja{background:linear-gradient(135deg,#fff8dc,#fff1b8);border:2px solid #f2dc8a;border-radius:16px;padding:12px;margin-top:12px}
+.pleno-caja h4{margin:0 0 8px;font-family:'Bebas Neue',Impact,sans-serif;font-size:22px;letter-spacing:1px;font-weight:400;color:#6b5300}
+.pleno-eq{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0}
+.pleno-eq span{font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pleno-eq .sig.on{background:#b88f13;border-color:#b88f13}
+.barra-guardar{position:sticky;bottom:-16px;background:linear-gradient(180deg,rgba(251,253,248,0),var(--tiza) 30%);padding:18px 0 4px;margin-top:8px}
+.contador{text-align:center;font-size:13px;color:var(--gris);margin-bottom:8px;font-weight:600}
+
+/* ---------- Modal ---------- */
+.modal-fondo{position:fixed;inset:0;background:rgba(5,20,10,.65);backdrop-filter:blur(3px);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:aparece .15s}
+@keyframes aparece{from{opacity:0}}
+.modal{background:var(--tiza);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));animation:sube .2s ease-out}
+@keyframes sube{from{transform:translateY(40px)}}
+@media(min-width:700px){.modal-fondo{align-items:center}.modal{border-radius:24px}}
+.modal-cab{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.modal-cab h2{font-family:'Bebas Neue',Impact,sans-serif;font-weight:400;letter-spacing:1px;font-size:28px;margin:0;flex:1}
+.cerrar{width:36px;height:36px;border-radius:50%;border:0;background:#e9f0ea;font-size:20px;line-height:1}
+
+/* ---------- Admin ---------- */
+.pestanas{display:flex;gap:6px;overflow-x:auto;padding:14px 0 2px;scrollbar-width:none}
+.pestanas::-webkit-scrollbar{display:none}
+.pestana{flex:none;border:0;border-radius:12px;padding:9px 14px;background:rgba(0,0,0,.22);color:#e6efe8;font-weight:700;font-size:13px}
+.pestana.activo{background:#fff;color:var(--cesped)}
+.lista{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:14px;padding:10px 12px}
+.item .info{flex:1;min-width:0}
+.item .info b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .info small{color:var(--gris)}
+.etiqueta{font-size:11px;font-weight:700;border-radius:99px;padding:3px 8px;background:#eef2ee;color:var(--gris)}
+.etiqueta.ok{background:var(--ok-bg);color:var(--ok)}
+.etiqueta.ko{background:var(--ko-bg);color:var(--ko)}
+.ed-partido{display:grid;grid-template-columns:24px 1fr 1fr;gap:6px;align-items:center;margin-bottom:6px}
+.ed-partido .n{font-size:12px;font-weight:800;color:var(--gris);text-align:center}
+.ed-partido .inp{padding:8px 9px;font-size:14px;border-radius:10px}
+.ed-partido .fecha{grid-column:2 / 4}
+.registro{font-size:13px}
+.registro .item{align-items:flex-start}
+.registro small{display:block}
+
+/* ---------- Toast y carga ---------- */
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--noche);color:#fff;border:2px solid var(--oro);padding:11px 18px;border-radius:14px;font-weight:600;font-size:14px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px);animation:aparece .2s}
+.toast.mal{border-color:#ff7b6b}
+.cargando{display:flex;flex-direction:column;align-items:center;gap:14px;color:#fff;padding:70px 0;font-weight:600}
+.balon{width:52px;height:52px;animation:rueda 1s linear infinite}
+@keyframes rueda{to{transform:rotate(360deg)}}
+.vacio{text-align:center;padding:30px 10px;color:var(--gris)}
+.vacio .grande{font-size:44px}
+.titulo{white-space:nowrap}
+@media(max-width:420px){.titulo{font-size:27px}.chip-sesion{max-width:96px;padding:6px 9px}.marcador .num{font-size:48px}.sig{width:38px;height:38px;font-size:15px}.botones{gap:4px}}
+</style>
+</head>
+<body>
+
+<header class="cabecera">
+  <div id="banner-demo"></div>
+  <div class="contenedor">
+    <svg class="escudo" viewBox="0 0 64 72" aria-hidden="true">
+      <defs><linearGradient id="gEsc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14803c"/><stop offset="1" stop-color="#0b4d22"/></linearGradient></defs>
+      <path d="M32 3 60 12v24c0 17-12 28-28 33C16 64 4 53 4 36V12z" fill="url(#gEsc)" stroke="#f2c230" stroke-width="3.5"/>
+      <path d="M4 30h56" stroke="#f2c230" stroke-width="2" opacity=".5"/>
+      <circle cx="32" cy="45" r="11" fill="#fff" stroke="#0b1f14" stroke-width="1.5"/>
+      <path d="M32 38.5l5 3.6-1.9 5.9h-6.2L27 42.1z" fill="#0b1f14"/>
+      <path d="M32 34v4.5M37 42.1l5-1.5M35.1 48l3 4M28.9 48l-3 4M27 42.1l-5-1.5" stroke="#0b1f14" stroke-width="1.4"/>
+      <text x="32" y="25" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="17" fill="#f2c230" letter-spacing="1">LL</text>
+      <path d="M17 14l1 2 2 .3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2-1.5-1.4 2-.3zM47 14l1 2 2 .3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2-1.5-1.4 2-.3z" fill="#f2c230"/>
+    </svg>
+    <div>
+      <h1 class="titulo" id="titulo">LIGA <span>LUPINOS</span></h1>
+      <div class="subtitulo" id="subtitulo">La Quiniela entre amigos</div>
+    </div>
+    <div class="espacio"></div>
+    <button class="chip-sesion" id="chip-sesion" hidden></button>
+  </div>
+</header>
+
+<main class="contenedor" id="app">
+  <div class="cargando"><svg class="balon" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="#fff" stroke="#0b1f14" stroke-width="2"/><path d="M26 15l9 6.5-3.4 10.6H20.4L17 21.5z" fill="#0b1f14"/><path d="M26 2v13M35 21.5l11-4M31.6 32.1l7 10M20.4 32.1l-7 10M17 21.5l-11-4" stroke="#0b1f14" stroke-width="2"/></svg>Calentando en la banda…</div>
+</main>
+
+<nav class="nav" id="nav">
+  <button data-vista="jornada" class="activo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5l4 2.9-1.5 4.7h-5L8 10.4z" fill="currentColor"/><path d="M12 2.5v5M16 10.4l5-1.6M14.5 15.1l3 4.2M9.5 15.1l-3 4.2M8 10.4l-5-1.6"/></svg>Jornada</button>
+  <button data-vista="clasificacion">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"/></svg>Clasificación</button>
+  <button data-vista="admin">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="13" r="6"/><path d="M9.5 10.5 3 8.5V6l8 2.6M15 13h.01M18 7.5l2.5-2.5"/></svg>Admin</button>
+</nav>
+
+<div id="capa-modal"></div>
+<div id="capa-toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   CONFIGURACIÓN
+   Pega aquí la URL de tu aplicación web de Apps Script (termina en /exec).
+   Si la dejas vacía, la web funciona en MODO DEMO con datos inventados.
+   ════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbxPNhiGb1QmM8r4mE39duL-4vkygd9sFyTYEQYbkWsTMGD_r-_LLzyg0YTE3jLGbayqFA/exec'
+};
+
+const DEMO = !CONFIG.API_URL;
+const S = { datos: null, vista: 'jornada', jSel: null, sesion: null, propios: {}, admin: null, adminDatos: null, adminTab: 'jornadas', edJornada: null, resSel: null, pronSel: { j: null, jug: null } };
+const $ = (sel, raiz = document) => raiz.querySelector(sel);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const almacen = {
+  get(k, sesion) { try { const v = (sesion ? sessionStorage : localStorage).getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(k, v, sesion) { try { (sesion ? sessionStorage : localStorage).setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k, sesion) { try { (sesion ? sessionStorage : localStorage).removeItem(k); } catch (e) {} }
+};
+
+/* ─────────────── API ─────────────── */
+async function api(accion, params = {}) {
+  if (DEMO) return demoApi(accion, JSON.parse(JSON.stringify(params)));
+  let r;
+  try {
+    r = await fetch(CONFIG.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ accion }, params)) });
+  } catch (e) { throw new Error('Sin conexión con el servidor. Inténtalo de nuevo.'); }
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Error desconocido');
+  return j.data;
+}
+
+async function cargarDatos() {
+  S.datos = await api('datos');
+  if (S.jSel == null || !S.datos.jornadas.find(j => j.numero === S.jSel)) S.jSel = jornadaActual();
+  pintarCabecera();
+}
+
+/* ─────────────── Cálculos ─────────────── */
+function jornadaActual() {
+  const js = S.datos.jornadas;
+  if (!js.length) return null;
+  const abierta = js.find(j => !j.cerrada && !j.anulada);
+  return (abierta || js[js.length - 1]).numero;
+}
+function getJ(n) { return S.datos.jornadas.find(j => j.numero === n); }
+function puntos(j, id) {
+  const p = j.pronosticos[id];
+  if (!Array.isArray(p)) return null;
+  let n = 0;
+  j.resultados.forEach((r, i) => { if (r && p[i] === r) n++; });
+  return n;
+}
+function plenoAcertado(j, id) { const p = j.pronosticos[id]; return Array.isArray(p) && !!j.resultados[14] && p[14] === j.resultados[14]; }
+function nRes(j) { return j.resultados.filter(Boolean).length; }
+function tienePronosticos(id) { return S.datos.jornadas.some(j => j.pronosticos[id] !== undefined); }
+function jugadoresVisibles() {
+  return S.datos.jugadores.filter(g => g.activo || tienePronosticos(g.id))
+    .sort((a, b) => (a.columna || 99) - (b.columna || 99) || a.nombre.localeCompare(b.nombre));
+}
+function masVotado(j, i) {
+  const cuenta = {};
+  Object.values(j.pronosticos).forEach(p => { if (Array.isArray(p) && p[i]) cuenta[p[i]] = (cuenta[p[i]] || 0) + 1; });
+  const max = Math.max(0, ...Object.values(cuenta));
+  if (!max) return null;
+  return { signos: Object.keys(cuenta).filter(k => cuenta[k] === max), votos: max };
+}
+function jornadasQueCuentan() { return S.datos.jornadas.filter(j => !j.anulada); }
+function clasificacion() {
+  const js = jornadasQueCuentan();
+  const filas = jugadoresVisibles().map(g => {
+    const por = js.map(j => puntos(j, g.id));
+    return {
+      g, por,
+      total: por.reduce((a, b) => a + (b || 0), 0),
+      plenos: js.filter(j => plenoAcertado(j, g.id)).length,
+      jugadas: por.filter(x => x !== null).length
+    };
+  });
+  filas.sort((a, b) => b.total - a.total || b.plenos - a.plenos || a.g.nombre.localeCompare(b.g.nombre));
+  let pos = 0;
+  filas.forEach((f, i) => { if (i === 0 || f.total !== filas[i - 1].total) pos = i + 1; f.pos = pos; });
+  // Posición antes de la última jornada con resultados (para la flecha de tendencia)
+  const conRes = js.map((j, k) => (nRes(j) ? k : -1)).filter(k => k >= 0);
+  const ult = conRes[conRes.length - 1];
+  if (ult !== undefined && conRes.length > 1) {
+    const prev = filas.map(f => ({ id: f.g.id, t: f.total - (f.por[ult] || 0) })).sort((a, b) => b.t - a.t);
+    let p = 0;
+    prev.forEach((x, i) => { if (i === 0 || x.t !== prev[i - 1].t) p = i + 1; x.pos = p; });
+    filas.forEach(f => { f.antes = prev.find(x => x.id === f.g.id).pos; f.ultima = f.por[ult]; });
+  } else if (ult !== undefined) {
+    filas.forEach(f => { f.ultima = f.por[ult]; });
+  }
+  return filas;
+}
+
+/* ─────────────── Formato ─────────────── */
+function fmtFecha(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+function cuentaAtras(iso) {
+  const ms = new Date(iso) - Date.now();
+  if (ms <= 0) return 'Cerrada';
+  const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  if (d) return d + 'd ' + h + 'h';
+  if (h) return h + 'h ' + mm + 'm';
+  return mm + ' min';
+}
+function eqHtml(p, i) {
+  const t = p.local || p.visitante ? esc(p.local) + ' – ' + esc(p.visitante) : 'Partido ' + (i + 1);
+  return '<span class="eq">' + t + (p.fecha ? '<small>' + esc(p.fecha) + '</small>' : '') + '</span>';
+}
+function partidoHtml(p, i) { return '<div class="partido' + (i === 14 ? ' pleno' : '') + '"><span class="n">' + (i === 14 ? 'P15' : i + 1) + '</span>' + eqHtml(p, i) + '</div>'; }
+function toLocalInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), z = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + ':' + z(d.getMinutes());
+}
+
+/* ─────────────── Interfaz general ─────────────── */
+function toast(msg, mal) {
+  const c = $('#capa-toast');
+  c.innerHTML = '<div class="toast' + (mal ? ' mal' : '') + '">' + esc(msg) + '</div>';
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { c.innerHTML = ''; }, mal ? 4500 : 2600);
+}
+function abrirModal(html) { $('#capa-modal').innerHTML = '<div class="modal-fondo"><div class="modal">' + html + '</div></div>'; document.body.style.overflow = 'hidden'; }
+function cerrarModal() { $('#capa-modal').innerHTML = ''; document.body.style.overflow = ''; }
+$('#capa-modal').addEventListener('click', e => { if (e.target.classList.contains('modal-fondo') || e.target.closest('.cerrar')) cerrarModal(); });
+
+async function conCarga(boton, fn) {
+  const txt = boton ? boton.innerHTML : '';
+  if (boton) { boton.disabled = true; boton.innerHTML = '⏳ Un momento…'; }
+  try { return await fn(); }
+  catch (e) { toast(e.message, true); }
+  finally { if (boton && boton.isConnected) { boton.disabled = false; boton.innerHTML = txt; } }
+}
+
+function pintarCabecera() {
+  const nombre = (S.datos && S.datos.config.nombre) || 'Liga Lupinos';
+  const partes = nombre.toUpperCase().split(' ');
+  $('#titulo').innerHTML = partes.length > 1 ? esc(partes.slice(0, -1).join(' ')) + ' <span>' + esc(partes[partes.length - 1]) + '</span>' : '<span>' + esc(nombre) + '</span>';
+  $('#subtitulo').textContent = (S.datos && S.datos.config.temporada) || 'La Quiniela entre amigos';
+  document.title = nombre;
+  const chip = $('#chip-sesion');
+  if (S.sesion) { chip.hidden = false; chip.textContent = '👤 ' + S.sesion.nombre; } else chip.hidden = true;
+}
+$('#chip-sesion').addEventListener('click', () => {
+  abrirModal('<div class="modal-cab"><h2>' + esc(S.sesion.nombre) + '</h2><button class="cerrar">×</button></div>'
+    + '<p class="muted">Has entrado con tu PIN en este dispositivo.</p>'
+    + '<button class="btn btn-claro btn-bloque" id="b-salir">Cerrar sesión</button>');
+  $('#b-salir').onclick = () => { S.sesion = null; S.propios = {}; almacen.del('lupinos_sesion'); almacen.del('lupinos_sesion', true); cerrarModal(); pintarCabecera(); render(); toast('Sesión cerrada'); };
+});
+
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('button[data-vista]');
+  if (!b) return;
+  S.vista = b.dataset.vista;
+  document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('activo', x === b));
+  render();
+  window.scrollTo({ top: 0 });
+});
+
+function render() {
+  const app = $('#app');
+  if (!S.datos) return;
+  if (S.vista === 'jornada') app.innerHTML = vistaJornada();
+  else if (S.vista === 'clasificacion') app.innerHTML = vistaClasificacion();
+  else app.innerHTML = vistaAdmin();
+  enlazar();
+}
+
+/* ─────────────── Vista: Jornada ─────────────── */
+function vistaJornada() {
+  const js = S.datos.jornadas;
+  if (!js.length) return '<div class="card vacio"><div class="grande">🏟️</div><h2>Aún no hay jornadas</h2><p>El administrador tiene que crear la primera desde la pestaña Admin.</p></div>';
+  const j = getJ(S.jSel);
+  const chips = '<div class="chips" id="chips">' + js.map(x => '<button class="chip' + (x.numero === j.numero ? ' activo' : '') + (x.anulada ? ' anulada' : '') + '" data-j="' + x.numero + '" title="' + (x.anulada ? 'No se juega' : '') + '">J' + x.numero + (!x.cerrada && !x.anulada ? '<i class="punto"></i>' : '') + '</button>').join('') + '</div>';
+
+  const res = nRes(j);
+  const finalizada = j.cerrada && res === 15;
+  const estado = j.anulada ? '<span class="pill nojuega">🚫 No se juega</span>' : !j.cerrada ? '<span class="pill abierta"><i class="led"></i>Abierta</span>'
+    : finalizada ? '<span class="pill final">Finalizada</span>' : '<span class="pill cerrada"><i class="led"></i>En juego</span>';
+  const jugs = jugadoresVisibles();
+  const enviados = jugs.filter(g => j.pronosticos[g.id] !== undefined).length;
+
+  let datos = '';
+  if (!j.cerrada && !j.anulada) {
+    datos += '<div class="dato"><span>Cierre</span><b>' + esc(fmtFecha(j.cierre)) + '</b></div>'
+      + '<div class="dato"><span>Quedan</span><b data-cuenta="' + esc(j.cierre) + '">' + cuentaAtras(j.cierre) + '</b></div>';
+  }
+  datos += '<div class="dato"><span>Pronósticos</span><b>' + enviados + ' / ' + jugs.filter(g => g.activo).length + '</b></div>'
+    + '<div class="dato"><span>Resultados</span><b>' + res + ' / 15</b><div class="progreso"><i style="width:' + (res / 15 * 100) + '%"></i></div></div>';
+
+  let html = chips + '<section class="marcador"><div class="fila"><div class="num"><small>JORNADA</small>' + j.numero + '</div><div style="flex:1"></div>' + estado + '</div>'
+    + '<div class="datos">' + datos + '</div>';
+  if (!j.cerrada && !j.anulada) {
+    const mio = S.sesion && S.propios[j.numero];
+    html += '<div class="cta"><button class="btn btn-oro btn-bloque" id="b-rellenar">' + (mio ? '✏️ Editar mi quiniela' : '⚽ Rellenar mi quiniela') + '</button></div>';
+  }
+  html += '</section>';
+  if (j.anulada) html += '<div class="card"><div class="aviso" style="margin:0">🚫 <b>Esta jornada no se juega.</b> No cuenta para la clasificación.</div></div>';
+
+  const ocultos = Object.values(j.pronosticos).some(p => p === 'oculto');
+  if (ocultos) {
+    html += '<div class="card"><h3>¿Quién ha enviado ya?</h3><div class="enviados">'
+      + jugs.filter(g => g.activo).map(g => '<span class="enviado' + (j.pronosticos[g.id] !== undefined ? ' si' : '') + '">' + (j.pronosticos[g.id] !== undefined ? '✓ ' : '⏳ ') + esc(g.nombre) + '</span>').join('')
+      + '</div><p class="muted" style="margin-top:10px">Los pronósticos se descubren cuando se cierre la jornada.</p></div>';
+    html += '<div class="card"><h3>Los partidos</h3>' + tablaBoleto(j, []) + '</div>';
+  } else {
+    const conPron = jugs.filter(g => j.pronosticos[g.id] !== undefined || g.activo);
+    html += '<div class="card"><h3>Pronósticos</h3>' + tablaBoleto(j, conPron) + leyenda(j) + '</div>';
+  }
+  return html;
+}
+
+function tablaBoleto(j, jugs) {
+  const consenso = jugs.length > 1 && Object.values(j.pronosticos).some(Array.isArray);
+  let h = '<div class="tabla-wrap"><table class="boleto"><thead><tr><th class="c-partido">Partido</th><th class="c-res"><div class="vertical">Resultado</div></th>';
+  jugs.forEach(g => { h += '<th class="c-jug" title="' + esc(g.nombre) + '"><div class="vertical">' + esc(g.nombre) + '</div></th>'; });
+  if (consenso) h += '<th class="c-cons" title="El más votado (el que va al Pleno al 15 oficial)"><div class="vertical">Más votado</div></th>';
+  h += '</tr></thead><tbody>';
+  j.partidos.forEach((p, i) => {
+    const r = j.resultados[i];
+    h += '<tr><td class="c-partido">' + partidoHtml(p, i) + '</td><td class="c-res">' + (r ? '<span class="sg res' + (i === 14 ? ' pleno' : '') + '">' + esc(r) + '</span>' : '<span class="sg vacio">–</span>') + '</td>';
+    jugs.forEach(g => {
+      const pr = j.pronosticos[g.id];
+      const v = Array.isArray(pr) ? pr[i] : '';
+      const cls = !v ? 'vacio' : !r ? '' : v === r ? 'ok' : 'ko';
+      h += '<td class="c-jug"><span class="sg ' + cls + (i === 14 ? ' pleno' : '') + '">' + (v ? esc(v) : '·') + '</span></td>';
+    });
+    if (consenso) {
+      const mv = masVotado(j, i);
+      const txt = mv ? mv.signos.join('/') : '';
+      const cls = !mv ? 'vacio' : !r ? '' : mv.signos.includes(r) ? 'ok' : 'ko';
+      h += '<td class="c-cons"><span class="sg ' + cls + (i === 14 ? ' pleno' : '') + '" title="' + (mv ? mv.votos + ' votos' : '') + '">' + (txt ? esc(txt) : '·') + '</span></td>';
+    }
+    h += '</tr>';
+  });
+  h += '</tbody>';
+  if (jugs.length) {
+    const pts = jugs.map(g => puntos(j, g.id));
+    const max = Math.max(...pts.filter(x => x !== null), 0);
+    h += '<tfoot><tr><td class="c-partido">Aciertos</td><td class="c-res"></td>'
+      + pts.map(x => '<td class="' + (x !== null && x === max && max > 0 ? 'top' : '') + '">' + (x === null ? '–' : x) + '</td>').join('')
+      + (consenso ? '<td class="c-cons"></td>' : '') + '</tr></tfoot>';
+  }
+  return h + '</table></div>';
+}
+function leyenda(j) {
+  return '<div class="leyenda"><span><span class="sg ok">1</span> Acierto</span><span><span class="sg ko">2</span> Fallo</span><span><span class="sg">X</span> Pendiente</span>'
+    + '<span>P15: goles local-visitante (0, 1, 2, M)</span></div>';
+}
+
+/* ─────────────── Rellenar quiniela (jugador) ─────────────── */
+function abrirRellenar() {
+  const j = getJ(S.jSel);
+  if (!j || j.cerrada || j.anulada) return;
+  if (!S.sesion) return abrirLogin();
+  formularioPronostico(j, S.propios[j.numero] || null, 'Jornada ' + j.numero, async (valores, boton) => {
+    await conCarga(boton, async () => {
+      await api('guardarPronostico', { jugadorId: S.sesion.id, pin: S.sesion.pin, jornada: j.numero, signos: valores });
+      S.propios[j.numero] = valores.slice();
+      cerrarModal();
+      toast('¡Quiniela guardada! ⚽');
+      await cargarDatos(); render();
+    });
+  });
+}
+
+function abrirLogin() {
+  const activos = S.datos.jugadores.filter(g => g.activo).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  abrirModal('<div class="modal-cab"><h2>¿Quién eres?</h2><button class="cerrar">×</button></div>'
+    + '<div class="campo"><label>Jugador</label><select id="l-jug"><option value="">Elige tu nombre…</option>'
+    + activos.map(g => '<option value="' + esc(g.id) + '">' + esc(g.nombre) + '</option>').join('') + '</select></div>'
+    + '<div class="campo"><label>PIN</label><input id="l-pin" class="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••"></div>'
+    + '<label class="check"><input type="checkbox" id="l-rec" checked> Recordarme en este móvil</label>'
+    + '<button class="btn btn-verde btn-bloque" id="l-ok">Entrar</button>'
+    + '<p class="muted" style="text-align:center">¿No tienes PIN? Pídeselo al administrador.</p>');
+  const entrar = async () => {
+    const id = $('#l-jug').value, pin = $('#l-pin').value.trim();
+    if (!id) return toast('Elige tu nombre', true);
+    if (!/^\d{4}$/.test(pin)) return toast('El PIN son 4 cifras', true);
+    await conCarga($('#l-ok'), async () => {
+      const r = await api('entrarJugador', { jugadorId: id, pin });
+      S.sesion = { id, pin, nombre: r.jugador.nombre };
+      S.propios = r.pronosticos || {};
+      almacen.set('lupinos_sesion', S.sesion, !$('#l-rec').checked);
+      pintarCabecera();
+      cerrarModal();
+      toast('¡Hola, ' + r.jugador.nombre + '!');
+      render();
+      abrirRellenar();
+    });
+  };
+  $('#l-ok').onclick = entrar;
+  $('#l-pin').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+}
+
+/** Selector reutilizable de 15 signos (1X2 + Pleno al 15 con goles) */
+function selectorHtml(j, valores, idCont) {
+  let h = '<div id="' + idCont + '">';
+  j.partidos.forEach((p, i) => {
+    if (i === 14) return;
+    h += '<div class="sel-fila">' + partidoHtml(p, i) + '<div class="botones">'
+      + ['1', 'X', '2'].map(v => '<button type="button" class="sig' + (valores[i] === v ? ' on' : '') + '" data-i="' + i + '" data-v="' + v + '">' + v + '</button>').join('')
+      + '</div></div>';
+  });
+  const p = j.partidos[14];
+  const pl = (valores[14] || '').split('-');
+  const grupo = lado => ['0', '1', '2', 'M'].map(v => '<button type="button" class="sig' + (pl[lado] === v ? ' on' : '') + '" data-i="14" data-lado="' + lado + '" data-v="' + v + '">' + v + '</button>').join('');
+  h += '<div class="pleno-caja"><h4>⭐ Pleno al 15</h4><div class="muted" style="margin:-4px 0 6px">Goles de cada equipo · M = 3 o más</div>'
+    + '<div class="pleno-eq"><span>' + esc(p.local || 'Local') + '</span><div class="botones">' + grupo(0) + '</div></div>'
+    + '<div class="pleno-eq"><span>' + esc(p.visitante || 'Visitante') + '</span><div class="botones">' + grupo(1) + '</div></div>'
+    + (p.fecha ? '<div class="muted">' + esc(p.fecha) + '</div>' : '') + '</div></div>';
+  return h;
+}
+function enlazarSelector(idCont, valores, opciones = {}) {
+  const cont = document.getElementById(idCont);
+  cont.addEventListener('click', e => {
+    const b = e.target.closest('button.sig');
+    if (!b) return;
+    const i = Number(b.dataset.i), v = b.dataset.v;
+    if (i < 14) {
+      valores[i] = (opciones.permitirVacio && valores[i] === v) ? '' : v;
+      cont.querySelectorAll('button[data-i="' + i + '"]').forEach(x => x.classList.toggle('on', x.dataset.v === valores[i]));
+    } else {
+      const lado = Number(b.dataset.lado);
+      const pl = (valores[14] || '-').split('-');
+      while (pl.length < 2) pl.push('');
+      pl[lado] = (opciones.permitirVacio && pl[lado] === v) ? '' : v;
+      valores[14] = pl[0] || pl[1] ? pl[0] + '-' + pl[1] : '';
+      cont.querySelectorAll('button[data-i="14"][data-lado="' + lado + '"]').forEach(x => x.classList.toggle('on', x.dataset.v === pl[lado]));
+    }
+    if (opciones.alCambiar) opciones.alCambiar();
+  });
+}
+function completos(valores) { return valores.filter((v, i) => (i < 14 ? !!v : /^[012M]-[012M]$/.test(v || ''))).length; }
+
+function formularioPronostico(j, inicial, titulo, alGuardar) {
+  const valores = inicial ? inicial.slice() : new Array(15).fill('');
+  abrirModal('<div class="modal-cab"><h2>' + esc(titulo) + '</h2><button class="cerrar">×</button></div>'
+    + (j.cierre ? '<p class="muted" style="margin-top:-6px">Puedes cambiarla hasta el ' + esc(fmtFecha(j.cierre)) + '</p>' : '')
+    + selectorHtml(j, valores, 'sel-jug')
+    + '<div class="barra-guardar"><div class="contador" id="contador"></div><button class="btn btn-oro btn-bloque" id="b-guardar">💾 Guardar quiniela</button></div>');
+  const actualizar = () => {
+    const n = completos(valores);
+    $('#contador').textContent = n + ' de 15 marcados' + (n === 15 ? ' ✓' : '');
+    $('#b-guardar').disabled = n !== 15;
+  };
+  enlazarSelector('sel-jug', valores, { alCambiar: actualizar });
+  actualizar();
+  $('#b-guardar').onclick = () => alGuardar(valores, $('#b-guardar'));
+}
+
+/* ─────────────── Vista: Clasificación ─────────────── */
+function vistaClasificacion() {
+  const filas = clasificacion();
+  const js = jornadasQueCuentan();
+  if (!filas.length || !js.some(j => nRes(j))) return '<div class="card vacio"><div class="grande">🏆</div><h2>Clasificación</h2><p>Aparecerá en cuanto haya resultados.</p></div>';
+  const max = filas[0].total, min = filas[filas.length - 1].total;
+  const medallas = ['🥇', '🥈', '🥉'];
+  const top = filas.slice(0, 3);
+  const escalon = (f, k) => f ? '<div class="escalon e' + (k + 1) + '"><div class="medalla">' + medallas[f.pos - 1 > 2 ? 2 : f.pos - 1] + '</div><div class="nombre">' + esc(f.g.nombre) + '</div><div class="bloque"><div class="p">' + f.total + '</div><div class="pts">PUNTOS</div></div></div>' : '<div></div>';
+  let h = '<div class="podio">' + escalon(top[1], 1) + escalon(top[0], 0) + escalon(top[2], 2) + '</div>';
+
+  h += '<div class="card"><h2>Clasificación general</h2><table class="clasif"><thead><tr><th>Pos</th><th>Jugador</th><th>Pts</th><th>Últ.</th><th title="Plenos al 15 acertados">P15</th></tr></thead><tbody>';
+  filas.forEach(f => {
+    const cls = f.total === max ? 'lider' : (max !== min && f.total === min ? 'colista' : '');
+    let flecha = '';
+    if (f.antes) {
+      const d = f.antes - f.pos;
+      flecha = d > 0 ? '<span class="flecha" style="color:var(--ok)">▲' + d + '</span>' : d < 0 ? '<span class="flecha" style="color:var(--ko)">▼' + (-d) + '</span>' : '';
+    }
+    h += '<tr class="' + cls + '"><td>' + f.pos + 'º</td><td class="nom">' + esc(f.g.nombre) + ' ' + flecha + '</td><td class="pts">' + f.total + '</td><td>' + (f.ultima == null ? '–' : f.ultima) + '</td><td>' + (f.plenos || '–') + '</td></tr>';
+  });
+  h += '</tbody></table><div class="leyenda"><span>🟩 Líder</span><span>🟥 Colista</span><span>P15 = Plenos al 15 acertados</span></div></div>';
+
+  // Matriz por jornadas
+  const conRes = js.filter(j => nRes(j));
+  h += '<div class="card"><h3>Jornada a jornada</h3><div class="tabla-wrap"><table class="matriz"><thead><tr><th class="c-nom">Jugador</th>'
+    + conRes.map(j => '<th>J' + j.numero + '</th>').join('') + '<th>Total</th></tr></thead><tbody>';
+  const mejores = conRes.map(j => Math.max(...filas.map(f => puntos(j, f.g.id) || 0)));
+  filas.forEach(f => {
+    h += '<tr><td class="c-nom">' + esc(f.g.nombre) + '</td>'
+      + conRes.map((j, k) => { const p = puntos(j, f.g.id); return '<td class="' + (p !== null && p === mejores[k] && p > 0 ? 'mejor' : '') + '">' + (p === null ? '–' : p) + '</td>'; }).join('')
+      + '<td class="total">' + f.total + '</td></tr>';
+  });
+  h += '</tbody></table></div><div class="leyenda"><span style="background:#fff3c4;padding:2px 8px;border-radius:6px;color:#7a5a00;font-weight:700">8</span> Mejor de la jornada</div></div>';
+  return h;
+}
+
+/* ─────────────── Vista: Admin ─────────────── */
+function vistaAdmin() {
+  if (!S.admin) {
+    return '<div class="card" style="max-width:420px;margin:24px auto"><h2>🔒 Administración</h2>'
+      + '<div class="campo"><label>Contraseña</label><input type="password" id="a-pass" autocomplete="current-password"></div>'
+      + '<button class="btn btn-verde btn-bloque" id="a-entrar">Entrar</button>'
+      + (DEMO ? '<p class="muted">En el modo demo la contraseña es <b>lupinos</b>.</p>' : '') + '</div>';
+  }
+  if (!S.adminDatos) return '<div class="cargando">Cargando…</div>';
+  const tabs = [['jornadas', '📅 Jornadas'], ['resultados', '🏁 Resultados'], ['jugadores', '👥 Jugadores'], ['pronosticos', '📝 Pronósticos'], ['ajustes', '⚙️ Ajustes'], ['registro', '🕓 Registro']];
+  let h = '<div class="pestanas">' + tabs.map(t => '<button class="pestana' + (S.adminTab === t[0] ? ' activo' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  h += ({ jornadas: adminJornadas, resultados: adminResultados, jugadores: adminJugadores, pronosticos: adminPronosticos, ajustes: adminAjustes, registro: adminRegistro })[S.adminTab]();
+  return h;
+}
+
+async function recargarAdmin() {
+  S.adminDatos = await api('adminDatos', { token: S.admin });
+  await cargarDatos();
+}
+
+function adminJornadas() {
+  const js = S.adminDatos.jornadas;
+  if (S.edJornada) return editorJornada();
+  let h = '<div class="card"><div style="display:flex;align-items:center;gap:10px"><h2 style="flex:1;margin:0">Jornadas</h2><button class="btn btn-oro btn-peq" id="j-nueva">＋ Nueva jornada</button></div>'
+    + '<p class="muted">Crea cada semana la jornada con sus 15 partidos y la hora de cierre. Hasta esa hora cada uno puede rellenar o cambiar su quiniela.</p><div class="lista">';
+  if (!js.length) h += '<div class="vacio">Todavía no hay jornadas.</div>';
+  js.slice().reverse().forEach(j => {
+    const pron = Object.keys(j.pronosticos).length;
+    h += '<div class="item"><div class="info"><b>J' + j.numero + (j.anulada ? ' <span class="etiqueta ko">No se juega</span>' : '') + (j.oficial ? ' <small class="muted">(oficial ' + esc(j.oficial) + ')</small>' : '') + '</b>'
+      + '<small>' + (j.cierre ? (j.cerrada ? 'Cerró ' : 'Cierra ') + esc(fmtFecha(j.cierre)) : 'Sin cierre (histórica)') + ' · ' + pron + ' pronósticos · ' + nRes(j) + '/15 resultados</small></div>'
+      + '<button class="btn btn-claro btn-peq" data-anular="' + j.numero + '" data-valor="' + (j.anulada ? '0' : '1') + '" title="' + (j.anulada ? 'Volver a contar esta jornada' : 'Marcar que no se juega') + '">' + (j.anulada ? '✅ Se juega' : '🚫 No se juega') + '</button>'
+      + '<button class="btn btn-claro btn-peq" data-editar="' + j.numero + '">Editar</button>'
+      + '<button class="btn btn-rojo btn-peq" data-borrar="' + j.numero + '" title="Borrar">🗑</button></div>';
+  });
+  return h + '</div></div>';
+}
+
+function editorJornada() {
+  const e = S.edJornada;
+  let h = '<div class="card"><h2>' + (e.nueva ? 'Nueva jornada' : 'Editar J' + e.numero) + '</h2>'
+    + '<div class="rejilla2"><div class="campo"><label>Nº jornada (J)</label><input type="number" min="1" id="e-num" value="' + esc(e.numero) + '"' + (e.nueva ? '' : ' disabled') + '></div>'
+    + '<div class="campo"><label>Jornada oficial</label><input type="number" min="1" id="e-of" value="' + esc(e.oficial || '') + '" placeholder="Opcional"></div></div>'
+    + '<div class="campo"><label>Cierre de pronósticos</label><input type="datetime-local" id="e-cierre" value="' + esc(toLocalInput(e.cierre)) + '"></div>'
+    + '<label class="check"><input type="checkbox" id="e-anulada"' + (e.anulada ? ' checked' : '') + '> 🚫 Esta jornada no se juega (no cuenta para la clasificación)</label>'
+    + '<div class="acciones" style="margin:0 0 12px"><button class="btn btn-verde btn-peq" id="e-web">🌐 Cargar boleto de la web</button><button class="btn btn-claro btn-peq" id="e-pegar">📋 Pegar lista</button></div>'
+    + '<div id="e-pegar-caja" hidden><div class="campo"><label>Un partido por línea: Local - Visitante</label><textarea id="e-texto" rows="8" placeholder="Real Madrid - Barcelona&#10;Betis - Sevilla&#10;…"></textarea></div><button class="btn btn-claro btn-peq" id="e-aplicar">Aplicar</button><br><br></div>'
+    + '<div id="e-partidos">';
+  e.partidos.forEach((p, i) => {
+    h += '<div class="ed-partido"><span class="n">' + (i === 14 ? 'P15' : i + 1) + '</span>'
+      + '<input class="inp" data-c="local" data-i="' + i + '" placeholder="Local" value="' + esc(p.local) + '">'
+      + '<input class="inp" data-c="visitante" data-i="' + i + '" placeholder="Visitante" value="' + esc(p.visitante) + '">'
+      + '<span></span><input class="inp fecha" data-c="fecha" data-i="' + i + '" placeholder="Día y hora (opcional): Mar. 21:00" value="' + esc(p.fecha) + '"></div>';
+  });
+  h += '</div><div class="acciones"><button class="btn btn-oro" id="e-guardar">💾 Guardar jornada</button><button class="btn btn-claro" id="e-cancelar">Cancelar</button></div></div>';
+  return h;
+}
+
+function adminResultados() {
+  const js = S.adminDatos.jornadas;
+  if (!js.length) return '<div class="card vacio">Crea primero una jornada.</div>';
+  if (S.resSel == null || !js.find(j => j.numero === S.resSel)) {
+    const pend = js.filter(j => j.cerrada && nRes(j) < 15);
+    S.resSel = (pend[pend.length - 1] || js[js.length - 1]).numero;
+  }
+  const j = js.find(x => x.numero === S.resSel);
+  return '<div class="card"><h2>Resultados</h2><div class="campo"><label>Jornada</label><select id="r-j">'
+    + js.slice().reverse().map(x => '<option value="' + x.numero + '"' + (x.numero === j.numero ? ' selected' : '') + '>J' + x.numero + ' · ' + nRes(x) + '/15</option>').join('') + '</select></div>'
+    + '<button class="btn btn-verde btn-bloque" id="r-buscar">🌐 Buscar resultados oficiales</button>'
+    + '<p class="muted">Lo intenta en la web de Loterías y Apuestas del Estado. Si no los encuentra, márcalos a mano. Pulsa otra vez un signo para quitarlo.</p>'
+    + selectorHtml(j, j.resultados.slice(), 'sel-res')
+    + '<div class="acciones"><button class="btn btn-oro btn-bloque" id="r-guardar">💾 Guardar resultados</button></div></div>';
+}
+
+function adminJugadores() {
+  const jugs = S.adminDatos.jugadores.slice().sort((a, b) => (a.columna || 99) - (b.columna || 99) || a.nombre.localeCompare(b.nombre));
+  let h = '<div class="card"><h2>Jugadores</h2><p class="muted">Cada jugador entra con su nombre y un PIN de 4 cifras que le das tú. Nadie más puede pronosticar.</p><div class="lista">';
+  jugs.forEach(g => {
+    h += '<div class="item"><div class="info"><b>' + (g.columna ? g.columna + '. ' : '') + esc(g.nombre) + '</b>'
+      + '<small>' + (g.tienePin ? '<span class="etiqueta ok">PIN ✓</span>' : '<span class="etiqueta ko">Sin PIN</span>') + ' ' + (g.activo ? '' : '<span class="etiqueta">Inactivo</span>') + '</small></div>'
+      + '<button class="btn btn-claro btn-peq" data-jug="' + esc(g.id) + '">Editar</button></div>';
+  });
+  h += '</div></div><div class="card"><h3 id="g-titulo">Añadir jugador</h3><input type="hidden" id="g-id">'
+    + '<div class="campo"><label>Nombre</label><input id="g-nombre" maxlength="40"></div>'
+    + '<div class="rejilla2"><div class="campo"><label>Columna</label><input type="number" id="g-col" min="1" max="20"></div>'
+    + '<div class="campo"><label>PIN (4 cifras)</label><input id="g-pin" inputmode="numeric" maxlength="4" placeholder="••••"></div></div>'
+    + '<label class="check" id="g-activo-caja" hidden><input type="checkbox" id="g-activo" checked> Activo (puede pronosticar)</label>'
+    + '<div class="acciones"><button class="btn btn-oro" id="g-guardar">💾 Guardar</button><button class="btn btn-claro" id="g-limpiar">Limpiar</button><button class="btn btn-claro" id="g-pinazar">🎲 PIN aleatorio</button></div>'
+    + '<p class="muted">Al editar, deja el PIN vacío para mantener el actual.</p></div>';
+  return h;
+}
+
+function adminPronosticos() {
+  const js = S.adminDatos.jornadas, jugs = S.adminDatos.jugadores.filter(g => g.activo);
+  if (!js.length || !jugs.length) return '<div class="card vacio">Necesitas al menos una jornada y un jugador.</div>';
+  if (S.pronSel.j == null || !js.find(j => j.numero === S.pronSel.j)) S.pronSel.j = js[js.length - 1].numero;
+  if (!S.pronSel.jug || !jugs.find(g => g.id === S.pronSel.jug)) S.pronSel.jug = jugs[0].id;
+  const j = js.find(x => x.numero === S.pronSel.j);
+  const actual = j.pronosticos[S.pronSel.jug];
+  return '<div class="card"><h2>Pronósticos</h2><p class="muted">Para meter o corregir la quiniela de alguien (por ejemplo, si te la manda por WhatsApp). Como admin puedes hacerlo aunque la jornada esté cerrada.</p>'
+    + '<div class="rejilla2"><div class="campo"><label>Jornada</label><select id="p-j">' + js.slice().reverse().map(x => '<option value="' + x.numero + '"' + (x.numero === j.numero ? ' selected' : '') + '>J' + x.numero + '</option>').join('') + '</select></div>'
+    + '<div class="campo"><label>Jugador</label><select id="p-jug">' + jugs.map(g => '<option value="' + esc(g.id) + '"' + (g.id === S.pronSel.jug ? ' selected' : '') + '>' + esc(g.nombre) + '</option>').join('') + '</select></div></div>'
+    + (Array.isArray(actual) ? '' : '<div class="aviso">Este jugador aún no tiene pronóstico en J' + j.numero + '.</div>')
+    + selectorHtml(j, Array.isArray(actual) ? actual.slice() : new Array(15).fill(''), 'sel-adm')
+    + '<div class="contador" id="p-cont" style="margin-top:12px"></div>'
+    + '<div class="acciones"><button class="btn btn-oro" id="p-guardar">💾 Guardar</button>' + (Array.isArray(actual) ? '<button class="btn btn-rojo" id="p-borrar">Borrar pronóstico</button>' : '') + '</div></div>';
+}
+
+function adminAjustes() {
+  const c = S.adminDatos.config;
+  return '<div class="card"><h2>Ajustes</h2>'
+    + '<div class="campo"><label>Nombre de la liga</label><input id="c-nombre" value="' + esc(c.nombre) + '"></div>'
+    + '<div class="campo"><label>Subtítulo / temporada</label><input id="c-temp" value="' + esc(c.temporada) + '"></div>'
+    + '<label class="check"><input type="checkbox" id="c-mostrar"' + (c.mostrarAntesCierre ? ' checked' : '') + '> Enseñar los pronósticos de todos antes del cierre</label>'
+    + '<button class="btn btn-oro" id="c-guardar">💾 Guardar ajustes</button></div>'
+    + '<div class="card"><h3>Contraseña de administrador</h3><div class="campo"><label>Nueva contraseña</label><input type="password" id="c-pass" autocomplete="new-password"></div><button class="btn btn-claro" id="c-cambiar">Cambiar contraseña</button></div>'
+    + '<div class="card"><h3>Importar jornadas históricas</h3><p class="muted">Pega aquí el texto de importación (formato JSON). Las jornadas con el mismo número se sustituyen.</p>'
+    + '<div class="campo"><textarea id="c-import" rows="6" placeholder=\'{"jornadas":[...]}\'></textarea></div>'
+    + '<div class="acciones" style="margin-top:0"><button class="btn btn-verde" id="c-importar">⬆️ Importar</button><label class="btn btn-claro" style="cursor:pointer">📂 Desde archivo<input type="file" id="c-archivo" accept=".json,application/json" hidden></label></div></div>'
+    + '<div class="card"><button class="btn btn-claro btn-bloque" id="c-salir">Cerrar sesión de administrador</button></div>';
+}
+
+function adminRegistro() {
+  return '<div class="card registro"><div style="display:flex;align-items:center;gap:10px"><h2 style="flex:1;margin:0">Registro de cambios</h2><button class="btn btn-claro btn-peq" id="reg-cargar">↻ Actualizar</button></div>'
+    + '<p class="muted">Quién guardó qué y cuándo.</p><div class="lista" id="reg-lista"><div class="vacio">Cargando…</div></div></div>';
+}
+
+/* ─────────────── Eventos ─────────────── */
+function enlazar() {
+  const chips = $('#chips');
+  if (chips) {
+    chips.addEventListener('click', e => { const b = e.target.closest('[data-j]'); if (b) { S.jSel = Number(b.dataset.j); render(); } });
+    const act = chips.querySelector('.activo');
+    if (act) act.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  const br = $('#b-rellenar');
+  if (br) br.onclick = abrirRellenar;
+  if (S.vista === 'admin') enlazarAdmin();
+}
+
+function enlazarAdmin() {
+  const app = $('#app');
+  if (!S.admin) {
+    const entrar = () => conCarga($('#a-entrar'), async () => {
+      const r = await api('adminLogin', { password: $('#a-pass').value });
+      S.admin = r.token;
+      almacen.set('lupinos_admin', S.admin, true);
+      render();
+      await recargarAdmin();
+      render();
+    });
+    $('#a-entrar').onclick = entrar;
+    $('#a-pass').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+    return;
+  }
+  if (!S.adminDatos) {
+    recargarAdmin().then(render).catch(errorAdmin);
+    return;
+  }
+  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.adminTab = b.dataset.tab; S.edJornada = null; render(); });
+
+  const tab = S.adminTab;
+  if (tab === 'jornadas') {
+    if (S.edJornada) return enlazarEditorJornada();
+    $('#j-nueva').onclick = () => {
+      const max = Math.max(0, ...S.adminDatos.jornadas.map(j => j.numero));
+      S.edJornada = { nueva: true, numero: max + 1, oficial: '', cierre: '', anulada: false, partidos: Array.from({ length: 15 }, () => ({ local: '', visitante: '', fecha: '' })) };
+      render();
+    };
+    app.querySelectorAll('[data-editar]').forEach(b => b.onclick = () => {
+      const j = S.adminDatos.jornadas.find(x => x.numero === Number(b.dataset.editar));
+      S.edJornada = { nueva: false, numero: j.numero, oficial: j.oficial, cierre: j.cierre, anulada: !!j.anulada, partidos: j.partidos.map(p => Object.assign({}, p)) };
+      render();
+    });
+    app.querySelectorAll('[data-anular]').forEach(b => b.onclick = () => {
+      const n = Number(b.dataset.anular), anular = b.dataset.valor === '1';
+      if (anular && !confirm('¿Marcar la J' + n + ' como "no se juega"? No contará para la clasificación (se puede deshacer).')) return;
+      conCarga(b, async () => { await api('marcarNoJugada', { token: S.admin, numero: n, anulada: anular }); await recargarAdmin(); render(); toast(anular ? 'J' + n + ': no se juega' : 'J' + n + ' vuelve a contar'); });
+    });
+    app.querySelectorAll('[data-borrar]').forEach(b => b.onclick = () => {
+      const n = Number(b.dataset.borrar);
+      if (!confirm('¿Borrar la J' + n + ' con todos sus partidos y pronósticos? No se puede deshacer.')) return;
+      conCarga(b, async () => { await api('borrarJornada', { token: S.admin, numero: n }); await recargarAdmin(); render(); toast('J' + n + ' borrada'); });
+    });
+  }
+  if (tab === 'resultados') {
+    const j = S.adminDatos.jornadas.find(x => x.numero === S.resSel);
+    const valores = j.resultados.slice();
+    enlazarSelector('sel-res', valores, { permitirVacio: true });
+    $('#r-j').onchange = e => { S.resSel = Number(e.target.value); render(); };
+    $('#r-guardar').onclick = () => conCarga($('#r-guardar'), async () => {
+      const limpios = valores.map((v, i) => (i === 14 && !/^[012M]-[012M]$/.test(v) ? '' : v));
+      await api('guardarResultados', { token: S.admin, numero: j.numero, resultados: limpios });
+      await recargarAdmin(); render(); toast('Resultados guardados');
+    });
+    $('#r-buscar').onclick = () => conCarga($('#r-buscar'), async () => {
+      const r = await api('buscarResultados', { token: S.admin, numero: j.numero });
+      await recargarAdmin(); render(); toast('Encontrados ' + r.encontrados + ' de 15 resultados');
+    });
+  }
+  if (tab === 'jugadores') {
+    const limpiar = () => { $('#g-id').value = ''; $('#g-nombre').value = ''; $('#g-col').value = ''; $('#g-pin').value = ''; $('#g-activo').checked = true; $('#g-activo-caja').hidden = true; $('#g-titulo').textContent = 'Añadir jugador'; };
+    app.querySelectorAll('[data-jug]').forEach(b => b.onclick = () => {
+      const g = S.adminDatos.jugadores.find(x => x.id === b.dataset.jug);
+      $('#g-id').value = g.id; $('#g-nombre').value = g.nombre; $('#g-col').value = g.columna || ''; $('#g-pin').value = '';
+      $('#g-activo').checked = g.activo; $('#g-activo-caja').hidden = false; $('#g-titulo').textContent = 'Editar: ' + g.nombre;
+      $('#g-nombre').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    $('#g-limpiar').onclick = limpiar;
+    $('#g-pinazar').onclick = () => { $('#g-pin').value = String(Math.floor(Math.random() * 10000)).padStart(4, '0'); };
+    $('#g-guardar').onclick = () => conCarga($('#g-guardar'), async () => {
+      const pin = $('#g-pin').value.trim();
+      const jug = { id: $('#g-id').value || undefined, nombre: $('#g-nombre').value.trim(), columna: Number($('#g-col').value) || 0, activo: $('#g-activo').checked };
+      if (pin) jug.pin = pin;
+      await api('guardarJugador', { token: S.admin, jugador: jug });
+      await recargarAdmin(); render();
+      toast(pin ? 'Guardado. PIN de ' + jug.nombre + ': ' + pin : 'Jugador guardado');
+    });
+  }
+  if (tab === 'pronosticos') {
+    const j = S.adminDatos.jornadas.find(x => x.numero === S.pronSel.j);
+    const act = j.pronosticos[S.pronSel.jug];
+    const valores = Array.isArray(act) ? act.slice() : new Array(15).fill('');
+    const cont = () => { $('#p-cont').textContent = completos(valores) + ' de 15 marcados'; };
+    enlazarSelector('sel-adm', valores, { alCambiar: cont });
+    cont();
+    $('#p-j').onchange = e => { S.pronSel.j = Number(e.target.value); render(); };
+    $('#p-jug').onchange = e => { S.pronSel.jug = e.target.value; render(); };
+    $('#p-guardar').onclick = () => conCarga($('#p-guardar'), async () => {
+      if (completos(valores) !== 15) throw new Error('Faltan partidos por marcar');
+      await api('guardarPronosticoAdmin', { token: S.admin, numero: j.numero, jugadorId: S.pronSel.jug, signos: valores });
+      await recargarAdmin(); render(); toast('Pronóstico guardado');
+    });
+    const bb = $('#p-borrar');
+    if (bb) bb.onclick = () => { if (confirm('¿Borrar este pronóstico?')) conCarga(bb, async () => { await api('guardarPronosticoAdmin', { token: S.admin, numero: j.numero, jugadorId: S.pronSel.jug, borrar: true }); await recargarAdmin(); render(); toast('Pronóstico borrado'); }); };
+  }
+  if (tab === 'ajustes') {
+    $('#c-guardar').onclick = () => conCarga($('#c-guardar'), async () => {
+      await api('guardarConfig', { token: S.admin, config: { nombre: $('#c-nombre').value, temporada: $('#c-temp').value, mostrarAntesCierre: $('#c-mostrar').checked } });
+      await recargarAdmin(); render(); toast('Ajustes guardados');
+    });
+    $('#c-cambiar').onclick = () => conCarga($('#c-cambiar'), async () => {
+      await api('cambiarContrasena', { token: S.admin, nueva: $('#c-pass').value });
+      $('#c-pass').value = ''; toast('Contraseña cambiada');
+    });
+    $('#c-archivo').onchange = e => { const f = e.target.files[0]; if (f) f.text().then(t => { $('#c-import').value = t; }); };
+    $('#c-importar').onclick = () => conCarga($('#c-importar'), async () => {
+      let datos;
+      try { datos = JSON.parse($('#c-import').value); } catch (e) { throw new Error('El texto no es un JSON válido'); }
+      const r = await api('importar', { token: S.admin, datos });
+      await recargarAdmin(); render(); toast('Importadas ' + r.jornadas + ' jornadas (' + r.jugadoresNuevos + ' jugadores nuevos)');
+    });
+    $('#c-salir').onclick = () => { S.admin = null; S.adminDatos = null; almacen.del('lupinos_admin', true); render(); };
+  }
+  if (tab === 'registro') {
+    const cargar = () => api('registro', { token: S.admin }).then(lista => {
+      $('#reg-lista').innerHTML = lista.length ? lista.map(r => '<div class="item"><div class="info"><b>' + esc(r.accion) + (r.jornada ? ' · ' + esc(r.jornada) : '') + (r.jugador ? ' · ' + esc(r.jugador) : '') + '</b>'
+        + '<small>' + esc(r.detalle) + '</small><small>' + esc(r.fecha) + ' · por ' + esc(r.por) + '</small></div></div>').join('') : '<div class="vacio">Sin cambios registrados.</div>';
+    }).catch(errorAdmin);
+    cargar();
+    $('#reg-cargar').onclick = cargar;
+  }
+}
+
+function enlazarEditorJornada() {
+  const e = S.edJornada;
+  const leerCampos = () => {
+    document.querySelectorAll('#e-partidos input').forEach(inp => { e.partidos[Number(inp.dataset.i)][inp.dataset.c] = inp.value.trim(); });
+    e.numero = Number($('#e-num').value); e.oficial = $('#e-of').value; e.anulada = $('#e-anulada').checked; e.cierre = $('#e-cierre').value ? new Date($('#e-cierre').value).toISOString() : '';
+  };
+  $('#e-cancelar').onclick = () => { S.edJornada = null; render(); };
+  $('#e-pegar').onclick = () => { $('#e-pegar-caja').hidden = !$('#e-pegar-caja').hidden; };
+  $('#e-aplicar').onclick = () => {
+    leerCampos();
+    const lineas = $('#e-texto').value.split('\n').map(l => l.trim()).filter(Boolean);
+    let k = 0;
+    lineas.forEach(l => {
+      const limpio = l.replace(/^\d{1,2}\s*[.)-]?\s+/, '');
+      const m = limpio.match(/^(.+?)\s*(?:\s-\s|–|—|\svs\.?\s|-)\s*(.+)$/i);
+      if (m && k < 15) { e.partidos[k].local = m[1].trim(); e.partidos[k].visitante = m[2].trim(); k++; }
+    });
+    toast(k + ' partidos aplicados');
+    render();
+  };
+  $('#e-web').onclick = () => conCarga($('#e-web'), async () => {
+    leerCampos();
+    const r = await api('cargarBoleto', { token: S.admin });
+    r.partidos.forEach((p, i) => { if (p.local) { e.partidos[i].local = p.local; e.partidos[i].visitante = p.visitante; } });
+    if (r.oficial && !e.oficial) e.oficial = r.oficial;
+    render();
+    toast(r.aviso || 'Boleto cargado: revisa los partidos', !!r.aviso);
+  });
+  $('#e-guardar').onclick = () => conCarga($('#e-guardar'), async () => {
+    leerCampos();
+    if (!e.cierre && !e.anulada) throw new Error('Pon la fecha y hora de cierre');
+    await api('guardarJornada', { token: S.admin, nueva: e.nueva, jornada: { numero: e.numero, oficial: e.oficial, cierre: e.cierre, anulada: e.anulada, partidos: e.partidos } });
+    S.edJornada = null; S.jSel = e.numero;
+    await recargarAdmin(); render(); toast('Jornada J' + e.numero + ' guardada');
+  });
+}
+
+function errorAdmin(err) {
+  if (/caducada/i.test(err.message)) { S.admin = null; S.adminDatos = null; almacen.del('lupinos_admin', true); render(); }
+  toast(err.message, true);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MODO DEMO (solo cuando API_URL está vacía): datos inventados en memoria
+   ════════════════════════════════════════════════════════════════ */
+let DB = null;
+function crearDemo() {
+  let semilla = 7;
+  const rnd = () => { semilla = (semilla * 16807) % 2147483647; return (semilla - 1) / 2147483646; };
+  const elige = a => a[Math.floor(rnd() * a.length)];
+  const nombres = ['Renos Pachuchos', 'Miranda', 'Miguel G', 'Payasos Dopados', 'Ansola', 'Futneral Old Boys', 'Drinkteam', 'Yei-Yei'];
+  const equipos = ['Real Madrid', 'Barcelona', 'Atlético', 'Athletic', 'Real Sociedad', 'Betis', 'Sevilla', 'Villarreal', 'Valencia', 'Celta', 'Osasuna', 'Getafe', 'Mallorca', 'Rayo', 'Girona', 'Alavés', 'Espanyol', 'Levante', 'Elche', 'Oviedo', 'Racing', 'Sporting', 'Zaragoza', 'Málaga', 'Deportivo', 'Almería', 'Cádiz', 'Granada', 'Huesca', 'Leganés'];
+  const dias = ['Sáb. 14:00', 'Sáb. 16:15', 'Sáb. 18:30', 'Sáb. 21:00', 'Dom. 14:00', 'Dom. 16:15', 'Dom. 18:30', 'Dom. 21:00', 'Lun. 21:00'];
+  const signo = () => { const r = rnd(); return r < .45 ? '1' : r < .75 ? 'X' : '2'; };
+  const gol = () => elige(['0', '1', '1', '2', '2', 'M']);
+  const db = { config: { nombre: 'Liga Lupinos', temporada: 'Temporada 2026/27 · DEMO', mostrarAntesCierre: false }, admin: 'lupinos', jugadores: [], jornadas: [], registro: [] };
+  nombres.forEach((n, i) => db.jugadores.push({ id: 'd' + i, nombre: n, columna: i + 1, activo: true, pin: '1234' }));
+  const ahora = Date.now();
+  for (let n = 1; n <= 5; n++) {
+    const eqs = equipos.slice().sort(() => rnd() - .5);
+    const partidos = [];
+    for (let i = 0; i < 15; i++) partidos.push({ local: eqs[i * 2], visitante: eqs[i * 2 + 1], fecha: elige(dias) });
+    const abierta = n === 5;
+    const cierre = new Date(ahora + (abierta ? 2.3 : -(5 - n) * 7 + 0.1) * 864e5).toISOString();
+    const resultados = partidos.map((p, i) => { if (abierta || (n === 4 && i > 9)) return ''; return i < 14 ? signo() : gol() + '-' + gol(); });
+    const pronosticos = {};
+    db.jugadores.forEach((g, k) => {
+      if (abierta && k % 3 === 2) return;
+      pronosticos[g.id] = partidos.map((p, i) => (i < 14 ? (rnd() < .5 && resultados[i] ? resultados[i] : signo()) : gol() + '-' + gol()));
+    });
+    db.jornadas.push({ numero: n, oficial: '', cierre, partidos, resultados, pronosticos });
+  }
+  return db;
+}
+function demoApi(accion, p) {
+  if (!DB) DB = crearDemo();
+  const espera = ms => new Promise(r => setTimeout(r, ms));
+  const copia = o => JSON.parse(JSON.stringify(o));
+  const log = (accion, jornada, jugador, detalle, por) => DB.registro.unshift({ fecha: new Date().toLocaleString('es-ES'), accion, jornada: jornada ? 'J' + jornada : '', jugador, detalle, por });
+  const vista = sinOcultar => {
+    const ahora = new Date();
+    return copia({
+      config: DB.config,
+      jugadores: DB.jugadores.map(g => ({ id: g.id, nombre: g.nombre, columna: g.columna, activo: g.activo, tienePin: !!g.pin })),
+      jornadas: DB.jornadas.slice().sort((a, b) => a.numero - b.numero).map(j => {
+        const cerrada = !j.cierre || new Date(j.cierre) <= ahora;
+        const pr = {};
+        Object.keys(j.pronosticos).forEach(id => { pr[id] = (cerrada || sinOcultar || DB.config.mostrarAntesCierre) ? j.pronosticos[id] : 'oculto'; });
+        return { numero: j.numero, oficial: j.oficial, cierre: j.cierre, cerrada, anulada: !!j.anulada, partidos: j.partidos, resultados: j.resultados, pronosticos: pr };
+      }),
+      ahora: ahora.toISOString()
+    });
+  };
+  const jug = (id, pin) => { const g = DB.jugadores.find(x => x.id === id && x.activo); if (!g) throw new Error('Jugador no encontrado.'); if (g.pin !== pin) throw new Error('PIN incorrecto. (En la demo todos tienen 1234)'); return g; };
+  const adm = () => { if (p.token !== 'demo-token') throw new Error('Sesión de administrador caducada.'); };
+  const jor = n => { const j = DB.jornadas.find(x => x.numero === Number(n)); if (!j) throw new Error('Esa jornada no existe.'); return j; };
+  return espera(250).then(() => {
+    switch (accion) {
+      case 'datos': return vista(false);
+      case 'entrarJugador': { const g = jug(p.jugadorId, p.pin); const pr = {}; DB.jornadas.forEach(j => { if (j.pronosticos[g.id]) pr[j.numero] = j.pronosticos[g.id]; }); return copia({ jugador: { id: g.id, nombre: g.nombre }, pronosticos: pr }); }
+      case 'guardarPronostico': { const g = jug(p.jugadorId, p.pin); const j = jor(p.jornada); if (j.anulada) throw new Error('Esta jornada no se juega.'); if (new Date(j.cierre) <= new Date()) throw new Error('La jornada ya está cerrada.'); j.pronosticos[g.id] = p.signos; log('Pronóstico', j.numero, g.nombre, p.signos.join(' '), g.nombre); return { guardado: true }; }
+      case 'adminLogin': if (p.password !== DB.admin) throw new Error('Contraseña incorrecta.'); return { token: 'demo-token' };
+      case 'adminDatos': adm(); return vista(true);
+      case 'guardarJugador': { adm(); const d = p.jugador; if (!d.nombre) throw new Error('El nombre es obligatorio.'); if (d.pin && !/^\d{4}$/.test(d.pin)) throw new Error('El PIN debe tener 4 cifras.');
+        if (d.id) { const g = DB.jugadores.find(x => x.id === d.id); Object.assign(g, { nombre: d.nombre, columna: d.columna, activo: d.activo }); if (d.pin) g.pin = d.pin; }
+        else { if (!d.pin) throw new Error('Pon un PIN de 4 cifras para el jugador nuevo.'); DB.jugadores.push({ id: 'd' + Date.now(), nombre: d.nombre, columna: d.columna, activo: true, pin: d.pin }); }
+        log('Jugador', '', d.nombre, d.id ? 'editado' : 'alta', 'admin'); return { ok: true }; }
+      case 'guardarJornada': { adm(); const d = p.jornada; const ex = DB.jornadas.find(x => x.numero === d.numero); if (p.nueva && ex) throw new Error('Ya existe la jornada J' + d.numero + '.');
+        if (ex) Object.assign(ex, { oficial: d.oficial, cierre: d.cierre, anulada: !!d.anulada, partidos: d.partidos }); else DB.jornadas.push({ numero: d.numero, oficial: d.oficial, cierre: d.cierre, anulada: !!d.anulada, partidos: d.partidos, resultados: new Array(15).fill(''), pronosticos: {} });
+        log('Jornada', d.numero, '', ex ? 'editada' : 'creada', 'admin'); return { numero: d.numero }; }
+      case 'borrarJornada': adm(); DB.jornadas = DB.jornadas.filter(j => j.numero !== p.numero); log('Jornada', p.numero, '', 'borrada', 'admin'); return { ok: true };
+      case 'guardarResultados': adm(); jor(p.numero).resultados = p.resultados; log('Resultados', p.numero, '', p.resultados.map(r => r || '·').join(' '), 'admin'); return { guardados: p.resultados.filter(Boolean).length };
+      case 'marcarNoJugada': adm(); jor(p.numero).anulada = !!p.anulada; log('Jornada', p.numero, '', p.anulada ? 'marcada como NO SE JUEGA' : 'vuelve a contar', 'admin'); return { ok: true };
+      case 'buscarResultados': adm(); throw new Error('En el modo demo no se consulta la web de Loterías.');
+      case 'cargarBoleto': adm(); throw new Error('En el modo demo no se consulta la web. Usa "Pegar lista".');
+      case 'guardarPronosticoAdmin': { adm(); const j = jor(p.numero); const g = DB.jugadores.find(x => x.id === p.jugadorId); if (p.borrar) delete j.pronosticos[p.jugadorId]; else j.pronosticos[p.jugadorId] = p.signos; log('Pronóstico', j.numero, g.nombre, p.borrar ? 'borrado' : p.signos.join(' '), 'admin'); return { ok: true }; }
+      case 'guardarConfig': adm(); Object.assign(DB.config, p.config); return { ok: true };
+      case 'cambiarContrasena': adm(); if ((p.nueva || '').length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.'); DB.admin = p.nueva; return { ok: true };
+      case 'importar': { adm(); const d = p.datos; if (!d || !Array.isArray(d.jornadas)) throw new Error('Formato de importación no válido.'); let nuevos = 0;
+        const idDe = n => { let g = DB.jugadores.find(x => x.nombre.toLowerCase() === String(n).toLowerCase()); if (!g) { g = { id: 'd' + Date.now() + nuevos, nombre: n, columna: 0, activo: true, pin: '' }; DB.jugadores.push(g); nuevos++; } return g.id; };
+        (d.jugadores || []).forEach(x => { const id = idDe(x.nombre); const g = DB.jugadores.find(y => y.id === id); if (x.columna) g.columna = x.columna; });
+        d.jornadas.forEach(j => { DB.jornadas = DB.jornadas.filter(x => x.numero !== j.numero); const pr = {}; Object.keys(j.pronosticos || {}).forEach(n => { pr[idDe(n)] = j.pronosticos[n]; });
+          DB.jornadas.push({ numero: j.numero, oficial: j.oficial || '', cierre: '', partidos: Array.from({ length: 15 }, (_, i) => Object.assign({ local: '', visitante: '', fecha: '' }, (j.partidos || [])[i] || {})), resultados: Array.from({ length: 15 }, (_, i) => (j.resultados || [])[i] || ''), pronosticos: pr }); });
+        log('Importación', '', '', d.jornadas.length + ' jornadas', 'admin'); return { jornadas: d.jornadas.length, jugadoresNuevos: nuevos }; }
+      case 'registro': adm(); return copia(DB.registro.slice(0, 150));
+    }
+    throw new Error('Acción desconocida');
+  });
+}
+
+/* ─────────────── Arranque ─────────────── */
+(async function iniciar() {
+  if (DEMO) $('#banner-demo').innerHTML = '<div class="demo">MODO DEMO · datos inventados · PIN 1234 · admin: lupinos</div>';
+  S.sesion = almacen.get('lupinos_sesion') || almacen.get('lupinos_sesion', true);
+  S.admin = almacen.get('lupinos_admin', true);
+  try {
+    await cargarDatos();
+    render();
+  } catch (e) {
+    $('#app').innerHTML = '<div class="card"><h2>No se pudo cargar</h2><div class="error">' + esc(e.message) + '</div><div class="acciones"><button class="btn btn-verde" onclick="location.reload()">Reintentar</button></div></div>';
+    return;
+  }
+  // Recupera los pronósticos propios si había sesión guardada
+  if (S.sesion) {
+    api('entrarJugador', { jugadorId: S.sesion.id, pin: S.sesion.pin })
+      .then(r => { S.propios = r.pronosticos || {}; if (S.vista === 'jornada') render(); })
+      .catch(() => { S.sesion = null; almacen.del('lupinos_sesion'); almacen.del('lupinos_sesion', true); pintarCabecera(); });
+  }
+  // Cuenta atrás y refresco periódico
+  setInterval(() => document.querySelectorAll('[data-cuenta]').forEach(el => { el.textContent = cuentaAtras(el.dataset.cuenta); }), 30000);
+  setInterval(() => {
+    if (document.hidden || $('#capa-modal').innerHTML || S.vista === 'admin') return;
+    cargarDatos().then(render).catch(() => {});
+  }, 120000);
+})();
+</script>
+</body>
+</html>
