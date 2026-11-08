@@ -133,6 +133,8 @@ table.boleto{border-collapse:separate;border-spacing:0;width:100%;font-size:14px
 .leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--gris);margin-top:12px;align-items:center}
 .leyenda .sg{min-width:22px;height:22px;font-size:11px}
 
+.barra-res{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:-2px 0 12px}
+.barra-res .muted{flex:1;min-width:150px}
 .enviados{display:flex;flex-wrap:wrap;gap:8px}
 .enviado{border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;background:#eef2ee;color:var(--gris)}
 .enviado.si{background:var(--ok-bg);color:var(--ok)}
@@ -514,7 +516,7 @@ function vistaJornada() {
   } else {
     if (!j.cerrada && !j.anulada) html += tarjetaEnviados(j, jugs);
     const conPron = jugs.filter(g => j.pronosticos[g.id] !== undefined || g.activo);
-    html += '<div class="card"><h3>Pronósticos</h3>' + tablaBoleto(j, conPron) + leyenda(j) + botonWhatsApp(j) + '</div>';
+    html += '<div class="card"><h3>Pronósticos</h3>' + barraResultados(j) + tablaBoleto(j, conPron) + leyenda(j) + botonWhatsApp(j) + '</div>';
   }
   return html;
 }
@@ -552,6 +554,34 @@ function tablaBoleto(j, jugs) {
   }
   return h + '</table></div>';
 }
+/* ─────────────── Actualizar resultados a mano ─────────────── */
+function horaActualizacion(iso) {
+  const d = new Date(iso);
+  const hora = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const txt = d.toDateString() === new Date().toDateString() ? 'hoy a las ' + hora : fmtFecha(iso);
+  const min = Math.round((Date.now() - d) / 60000);
+  return txt + (min < 60 ? ' (' + (min < 1 ? 'ahora mismo' : 'hace ' + min + ' min') + ')' : '');
+}
+function barraResultados(j) {
+  if (!j.cerrada || j.anulada) return '';
+  const completa = nRes(j) === 15;
+  const ultima = j.actualizado ? 'Última actualización: ' + horaActualizacion(j.actualizado) : 'Aún no se han buscado resultados';
+  const nota = completa ? '✅ Resultados completos' + (j.actualizado ? ' · ' + ultima : '') : '🕓 ' + ultima;
+  return '<div class="barra-res"><span class="muted">' + esc(nota) + '</span>'
+    + (completa ? '' : '<button class="btn btn-claro btn-peq" id="b-actualizar">🔄 Actualizar resultados</button>') + '</div>';
+}
+async function actualizarResultadosWeb(boton) {
+  const j = getJ(S.jSel);
+  await conCarga(boton, async () => {
+    const r = await api('actualizarResultados', { numero: j.numero });
+    await cargarDatos();
+    render();
+    if (r.reciente) toast('Se acaba de comprobar. Vuelve a intentarlo en unos minutos.');
+    else if (r.nuevos) toast('⚽ ' + r.nuevos + (r.nuevos === 1 ? ' resultado nuevo' : ' resultados nuevos') + (r.fuentes && r.fuentes.length ? ' (' + r.fuentes.join(' + ') + ')' : ''));
+    else toast('Sin resultados nuevos por ahora');
+  });
+}
+
 /* ─────────────── Enviar columnas por WhatsApp ─────────────── */
 function tarjetaEnviados(j, jugs) {
   const activos = jugs.filter(g => g.activo);
@@ -884,6 +914,8 @@ function enlazar() {
   if (br) br.onclick = abrirRellenar;
   const bw = $('#b-wa');
   if (bw) bw.onclick = () => enviarWhatsApp(bw);
+  const ba = $('#b-actualizar');
+  if (ba) ba.onclick = () => actualizarResultadosWeb(ba);
   if (S.vista === 'admin') enlazarAdmin();
 }
 
@@ -1099,7 +1131,7 @@ function demoApi(accion, p) {
         const cerrada = !j.cierre || new Date(j.cierre) <= ahora;
         const pr = {};
         Object.keys(j.pronosticos).forEach(id => { pr[id] = (cerrada || sinOcultar || DB.config.mostrarAntesCierre) ? j.pronosticos[id] : 'oculto'; });
-        return { numero: j.numero, oficial: j.oficial, cierre: j.cierre, cerrada, anulada: !!j.anulada, partidos: j.partidos, resultados: j.resultados, pronosticos: pr };
+        return { numero: j.numero, oficial: j.oficial, cierre: j.cierre, cerrada, anulada: !!j.anulada, actualizado: j.actualizado || '', partidos: j.partidos, resultados: j.resultados, pronosticos: pr };
       }),
       ahora: ahora.toISOString()
     });
@@ -1123,6 +1155,7 @@ function demoApi(accion, p) {
         log('Jornada', d.numero, '', ex ? 'editada' : 'creada', 'admin'); return { numero: d.numero }; }
       case 'borrarJornada': adm(); DB.jornadas = DB.jornadas.filter(j => j.numero !== p.numero); log('Jornada', p.numero, '', 'borrada', 'admin'); return { ok: true };
       case 'guardarResultados': adm(); jor(p.numero).resultados = p.resultados; log('Resultados', p.numero, '', p.resultados.map(r => r || '·').join(' '), 'admin'); return { guardados: p.resultados.filter(Boolean).length };
+      case 'actualizarResultados': { const j = jor(p.numero); j.actualizado = new Date().toISOString(); return { nuevos: 0, fuentes: [], completa: false }; }
       case 'marcarNoJugada': adm(); jor(p.numero).anulada = !!p.anulada; log('Jornada', p.numero, '', p.anulada ? 'marcada como NO SE JUEGA' : 'vuelve a contar', 'admin'); return { ok: true };
       case 'buscarResultados': adm(); throw new Error('En el modo demo no se consulta la web de Loterías.');
       case 'cargarBoleto': adm(); throw new Error('En el modo demo no se consulta la web. Usa "Pegar lista".');
