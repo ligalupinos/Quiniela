@@ -449,14 +449,46 @@ function pintarCabecera() {
   $('#subtitulo').textContent = document.body.classList.contains('navidad') ? '🎄 ¡Felices fiestas!' : ((S.datos && S.datos.config.temporada) || 'La Quiniela entre amigos');
   document.title = nombre;
   const chip = $('#chip-sesion');
-  if (S.sesion) { chip.hidden = false; chip.textContent = '👤 ' + S.sesion.nombre; } else chip.hidden = true;
+  chip.hidden = !S.datos;
+  chip.textContent = S.sesion ? '👤 ' + S.sesion.nombre : '👤 Entrar';
 }
-$('#chip-sesion').addEventListener('click', () => {
-  abrirModal('<div class="modal-cab"><h2>' + esc(S.sesion.nombre) + '</h2><button class="cerrar">×</button></div>'
-    + '<p class="muted">Has entrado con tu PIN en este dispositivo.</p>'
-    + '<button class="btn btn-claro btn-bloque" id="b-salir">Cerrar sesión</button>');
+$('#chip-sesion').addEventListener('click', () => { if (S.sesion) abrirPerfil(); else abrirLogin(abrirPerfil); });
+
+/** «Mi equipo»: el jugador cambia su nombre de equipo y su PIN */
+function abrirPerfil() {
+  abrirModal('<div class="modal-cab"><h2>Mi equipo</h2><button class="cerrar">×</button></div>'
+    + '<div class="campo"><label>Nombre del equipo</label><input id="mi-nombre" maxlength="40" value="' + esc(S.sesion.nombre) + '"></div>'
+    + '<div class="rejilla2"><div class="campo"><label>PIN nuevo</label><input id="mi-pin1" class="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••"></div>'
+    + '<div class="campo"><label>Repite el PIN</label><input id="mi-pin2" class="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••"></div></div>'
+    + '<p class="muted" style="margin-top:-4px">Deja el PIN vacío si no quieres cambiarlo.</p>'
+    + '<button class="btn btn-oro btn-bloque" id="mi-guardar">💾 Guardar cambios</button>'
+    + '<div class="acciones"><button class="btn btn-claro btn-bloque" id="b-salir">Cerrar sesión</button></div>');
+  $('#mi-guardar').onclick = async () => {
+    const nombre = $('#mi-nombre').value.trim(), p1 = $('#mi-pin1').value.trim(), p2 = $('#mi-pin2').value.trim();
+    if (!nombre) return toast('Pon un nombre de equipo', true);
+    const cambios = {};
+    if (nombre !== S.sesion.nombre) cambios.nuevoNombre = nombre;
+    if (p1 || p2) {
+      if (!/^\d{4}$/.test(p1)) return toast('El PIN nuevo debe tener 4 cifras', true);
+      if (p1 !== p2) return toast('Los dos PIN no coinciden', true);
+      cambios.nuevoPin = p1;
+    }
+    if (!Object.keys(cambios).length) return toast('No has cambiado nada');
+    await conCarga($('#mi-guardar'), async () => {
+      const r = await api('editarPerfil', Object.assign({ jugadorId: S.sesion.id, pin: S.sesion.pin }, cambios));
+      const recordar = !!almacen.get('lupinos_sesion');
+      S.sesion.nombre = r.nombre;
+      if (cambios.nuevoPin) S.sesion.pin = cambios.nuevoPin;
+      almacen.set('lupinos_sesion', S.sesion, !recordar);
+      cerrarModal();
+      pintarCabecera();
+      toast(cambios.nuevoPin && cambios.nuevoNombre ? 'Nombre y PIN actualizados' : cambios.nuevoPin ? 'PIN cambiado. ¡Que no se te olvide!' : 'Nombre del equipo cambiado');
+      await cargarDatos();
+      render();
+    });
+  };
   $('#b-salir').onclick = () => { S.sesion = null; S.propios = {}; almacen.del('lupinos_sesion'); almacen.del('lupinos_sesion', true); cerrarModal(); pintarCabecera(); render(); toast('Sesión cerrada'); };
-});
+}
 
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-vista]');
@@ -643,7 +675,7 @@ function leyenda(j) {
 function abrirRellenar() {
   const j = getJ(S.jSel);
   if (!j || j.cerrada || j.anulada) return;
-  if (!S.sesion) return abrirLogin();
+  if (!S.sesion) return abrirLogin(abrirRellenar);
   formularioPronostico(j, S.propios[j.numero] || null, 'Jornada ' + j.numero, async (valores, boton) => {
     await conCarga(boton, async () => {
       await api('guardarPronostico', { jugadorId: S.sesion.id, pin: S.sesion.pin, jornada: j.numero, signos: valores });
@@ -655,7 +687,7 @@ function abrirRellenar() {
   });
 }
 
-function abrirLogin() {
+function abrirLogin(alEntrar) {
   const activos = S.datos.jugadores.filter(g => g.activo).sort((a, b) => a.nombre.localeCompare(b.nombre));
   abrirModal('<div class="modal-cab"><h2>¿Quién eres?</h2><button class="cerrar">×</button></div>'
     + '<div class="campo"><label>Jugador</label><select id="l-jug"><option value="">Elige tu nombre…</option>'
@@ -677,7 +709,7 @@ function abrirLogin() {
       cerrarModal();
       toast('¡Hola, ' + r.jugador.nombre + '!');
       render();
-      abrirRellenar();
+      if (alEntrar) alEntrar();
     });
   };
   $('#l-ok').onclick = entrar;
@@ -1144,6 +1176,10 @@ function demoApi(accion, p) {
       case 'datos': return vista(false);
       case 'entrarJugador': { const g = jug(p.jugadorId, p.pin); const pr = {}; DB.jornadas.forEach(j => { if (j.pronosticos[g.id]) pr[j.numero] = j.pronosticos[g.id]; }); return copia({ jugador: { id: g.id, nombre: g.nombre }, pronosticos: pr }); }
       case 'guardarPronostico': { const g = jug(p.jugadorId, p.pin); const j = jor(p.jornada); if (j.anulada) throw new Error('Esta jornada no se juega.'); if (new Date(j.cierre) <= new Date()) throw new Error('La jornada ya está cerrada.'); j.pronosticos[g.id] = p.signos; log('Pronóstico', j.numero, g.nombre, p.signos.join(' '), g.nombre); return { guardado: true }; }
+      case 'editarPerfil': { const g = jug(p.jugadorId, p.pin);
+        if (p.nuevoNombre !== undefined) { const n = String(p.nuevoNombre).trim(); if (!n) throw new Error('Pon un nombre de equipo.'); if (DB.jugadores.some(x => x.id !== g.id && x.nombre.toLowerCase() === n.toLowerCase())) throw new Error('Ya hay un equipo con ese nombre.'); g.nombre = n; }
+        if (p.nuevoPin !== undefined) { if (!/^\d{4}$/.test(p.nuevoPin)) throw new Error('El PIN nuevo debe tener 4 cifras.'); g.pin = p.nuevoPin; }
+        log('Jugador', '', g.nombre, 'cambió sus datos', g.nombre); return { nombre: g.nombre }; }
       case 'adminLogin': if (p.password !== DB.admin) throw new Error('Contraseña incorrecta.'); return { token: 'demo-token' };
       case 'adminDatos': adm(); return vista(true);
       case 'guardarJugador': { adm(); const d = p.jugador; if (!d.nombre) throw new Error('El nombre es obligatorio.'); if (d.pin && !/^\d{4}$/.test(d.pin)) throw new Error('El PIN debe tener 4 cifras.');
