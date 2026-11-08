@@ -209,8 +209,8 @@ table.clasif{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:
 .pestana{flex:none;border:0;border-radius:12px;padding:9px 14px;background:rgba(0,0,0,.22);color:#e6efe8;font-weight:700;font-size:13px}
 .pestana.activo{background:#fff;color:var(--cesped)}
 .lista{display:flex;flex-direction:column;gap:8px}
-.item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:14px;padding:10px 12px}
-.item .info{flex:1;min-width:0}
+.item{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff;border:1px solid var(--linea);border-radius:14px;padding:10px 12px}
+.item .info{flex:1;min-width:150px}
 .item .info b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .info small{color:var(--gris)}
 .etiqueta{font-size:11px;font-weight:700;border-radius:99px;padding:3px 8px;background:#eef2ee;color:var(--gris)}
@@ -838,8 +838,10 @@ function adminJornadas() {
   js.slice().reverse().forEach(j => {
     const pron = Object.keys(j.pronosticos).length;
     h += '<div class="item"><div class="info"><b>J' + j.numero + (j.anulada ? ' <span class="etiqueta ko">No se juega</span>' : '') + (j.oficial ? ' <small class="muted">(oficial ' + esc(j.oficial) + ')</small>' : '') + '</b>'
-      + '<small>' + (j.cierre ? (j.cerrada ? 'Cerró ' : 'Cierra ') + esc(fmtFecha(j.cierre)) : 'Sin cierre (histórica)') + ' · ' + pron + ' pronósticos · ' + nRes(j) + '/15 resultados</small></div>'
+      + '<small>' + (j.cierre ? (j.cerrada ? (j.cierreOficial ? '🔒 Cerrada a mano el ' : 'Cerró ') : 'Cierra ') + esc(fmtFecha(j.cierre)) : 'Sin cierre (histórica)') + ' · ' + pron + ' pronósticos · ' + nRes(j) + '/15 resultados</small></div>'
       + '<button class="btn btn-claro btn-peq" data-anular="' + j.numero + '" data-valor="' + (j.anulada ? '0' : '1') + '" title="' + (j.anulada ? 'Volver a contar esta jornada' : 'Marcar que no se juega') + '">' + (j.anulada ? '✅ Se juega' : '🚫 No se juega') + '</button>'
+      + (!j.anulada && j.cierre && !j.cerrada ? '<button class="btn btn-oro btn-peq" data-cerrar="' + j.numero + '" title="Cerrar ya, cuando esté echada la apuesta oficial">🔒 Cerrar ya</button>' : '')
+      + (j.cerrada && j.cierreOficial ? '<button class="btn btn-claro btn-peq" data-reabrir="' + j.numero + '" title="Volver a abrir hasta el cierre oficial (' + esc(fmtFecha(j.cierreOficial)) + ')">🔓 Reabrir</button>' : '')
       + '<button class="btn btn-claro btn-peq" data-editar="' + j.numero + '">Editar</button>'
       + '<button class="btn btn-rojo btn-peq" data-borrar="' + j.numero + '" title="Borrar">🗑</button></div>';
   });
@@ -989,6 +991,15 @@ function enlazarAdmin() {
       const n = Number(b.dataset.anular), anular = b.dataset.valor === '1';
       if (anular && !confirm('¿Marcar la J' + n + ' como "no se juega"? No contará para la clasificación (se puede deshacer).')) return;
       conCarga(b, async () => { await api('marcarNoJugada', { token: S.admin, numero: n, anulada: anular }); await recargarAdmin(); render(); toast(anular ? 'J' + n + ': no se juega' : 'J' + n + ' vuelve a contar'); });
+    });
+    app.querySelectorAll('[data-cerrar]').forEach(b => b.onclick = () => {
+      const n = Number(b.dataset.cerrar);
+      if (!confirm('¿Cerrar ya la J' + n + '? Nadie podrá rellenar ni cambiar su quiniela (se puede reabrir si es un error).')) return;
+      conCarga(b, async () => { await api('cerrarJornada', { token: S.admin, numero: n }); await recargarAdmin(); render(); toast('🔒 J' + n + ' cerrada'); });
+    });
+    app.querySelectorAll('[data-reabrir]').forEach(b => b.onclick = () => {
+      const n = Number(b.dataset.reabrir);
+      conCarga(b, async () => { const r = await api('cerrarJornada', { token: S.admin, numero: n, abrir: true }); await recargarAdmin(); render(); toast('🔓 J' + n + ' abierta hasta el ' + fmtFecha(r.cierre)); });
     });
     app.querySelectorAll('[data-borrar]').forEach(b => b.onclick = () => {
       const n = Number(b.dataset.borrar);
@@ -1163,7 +1174,7 @@ function demoApi(accion, p) {
         const cerrada = !j.cierre || new Date(j.cierre) <= ahora;
         const pr = {};
         Object.keys(j.pronosticos).forEach(id => { pr[id] = (cerrada || sinOcultar || DB.config.mostrarAntesCierre) ? j.pronosticos[id] : 'oculto'; });
-        return { numero: j.numero, oficial: j.oficial, cierre: j.cierre, cerrada, anulada: !!j.anulada, actualizado: j.actualizado || '', partidos: j.partidos, resultados: j.resultados, pronosticos: pr };
+        return { numero: j.numero, oficial: j.oficial, cierre: j.cierre, cerrada, anulada: !!j.anulada, actualizado: j.actualizado || '', cierreOficial: j.cierreOficial || '', partidos: j.partidos, resultados: j.resultados, pronosticos: pr };
       }),
       ahora: ahora.toISOString()
     });
@@ -1192,6 +1203,10 @@ function demoApi(accion, p) {
       case 'borrarJornada': adm(); DB.jornadas = DB.jornadas.filter(j => j.numero !== p.numero); log('Jornada', p.numero, '', 'borrada', 'admin'); return { ok: true };
       case 'guardarResultados': adm(); jor(p.numero).resultados = p.resultados; log('Resultados', p.numero, '', p.resultados.map(r => r || '·').join(' '), 'admin'); return { guardados: p.resultados.filter(Boolean).length };
       case 'actualizarResultados': { const j = jor(p.numero); j.actualizado = new Date().toISOString(); return { nuevos: 0, fuentes: [], completa: false }; }
+      case 'cerrarJornada': { adm(); const j = jor(p.numero); const ahora = new Date();
+        if (!p.abrir) { if (j.anulada) throw new Error('Esta jornada no se juega.'); if (!j.cierre || new Date(j.cierre) <= ahora) throw new Error('La jornada ya está cerrada.'); j.cierreOficial = j.cierre; j.cierre = ahora.toISOString(); log('Jornada', j.numero, '', 'cerrada a mano', 'admin'); return { numero: j.numero, cerrada: true }; }
+        if (!j.cierreOficial) throw new Error('Esta jornada no se cerró a mano. Para cambiar su cierre usa «Editar».'); if (new Date(j.cierreOficial) <= ahora) throw new Error('El cierre oficial ya ha pasado. Usa «Editar» para poner otra hora de cierre.');
+        j.cierre = j.cierreOficial; j.cierreOficial = ''; log('Jornada', j.numero, '', 'reabierta', 'admin'); return { numero: j.numero, cerrada: false, cierre: j.cierre }; }
       case 'marcarNoJugada': adm(); jor(p.numero).anulada = !!p.anulada; log('Jornada', p.numero, '', p.anulada ? 'marcada como NO SE JUEGA' : 'vuelve a contar', 'admin'); return { ok: true };
       case 'buscarResultados': adm(); throw new Error('En el modo demo no se consulta la web de Loterías.');
       case 'cargarBoleto': adm(); throw new Error('En el modo demo no se consulta la web. Usa "Pegar lista".');
