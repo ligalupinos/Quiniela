@@ -140,6 +140,15 @@ table.boleto{border-collapse:separate;border-spacing:0;width:100%;font-size:14px
 .enviado.si{background:var(--ok-bg);color:var(--ok)}
 
 /* ---------- Clasificación ---------- */
+.chips.temporadas{padding-top:4px}
+.chips.claros .chip{color:var(--cesped);border-color:var(--linea);background:#fff}
+.chips.claros .chip.activo{background:var(--oro);border-color:var(--oro);color:var(--noche)}
+.chips.temporadas .chip{font-size:18px}
+.palmares td.copas{font-size:15px;letter-spacing:1px}
+.campeones .item .info b{white-space:normal}
+.nota-hist{background:#fff8e1;border:1px solid #f1d27a;color:#6b5300;border-radius:12px;padding:10px 12px;font-size:13px;margin:0 0 12px}
+.check-jug{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+.check-jug label{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--linea);border-radius:10px;padding:6px 10px;font-size:14px;cursor:pointer}
 .podio{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:8px;margin:18px 0 6px}
 .escalon{text-align:center;color:#fff}
 .escalon .nombre{font-weight:700;font-size:13px;margin:6px 4px;line-height:1.15;min-height:30px;display:flex;align-items:flex-end;justify-content:center;text-shadow:0 1px 3px rgba(0,0,0,.5)}
@@ -313,7 +322,7 @@ const CONFIG = {
 };
 
 const DEMO = !CONFIG.API_URL;
-const S = { datos: null, vista: 'jornada', jSel: null, sesion: null, propios: {}, admin: null, adminDatos: null, adminTab: 'jornadas', edJornada: null, resSel: null, pronSel: { j: null, jug: null } };
+const S = { datos: null, vista: 'jornada', jSel: null, sesion: null, propios: {}, admin: null, adminDatos: null, adminTab: 'jornadas', edJornada: null, resSel: null, pronSel: { j: null, jug: null }, hist: null, histSel: 'actual', histJ: {}, histJSel: null };
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const almacen = {
@@ -565,7 +574,7 @@ function tablaBoleto(j, jugs) {
     jugs.forEach(g => {
       const pr = j.pronosticos[g.id];
       const v = Array.isArray(pr) ? pr[i] : '';
-      const cls = !v ? 'vacio' : !r ? '' : v === r ? 'ok' : 'ko';
+      const cls = !v ? 'vacio' : !r ? '' : (v === r || (i < 14 && /^[1X2]{2,3}$/.test(r) && r.includes(v))) ? 'ok' : 'ko';
       h += '<td class="c-jug"><span class="sg ' + cls + (i === 14 ? ' pleno' : '') + '">' + (v ? esc(v) : '·') + '</span></td>';
     });
     if (consenso) {
@@ -578,7 +587,7 @@ function tablaBoleto(j, jugs) {
   });
   h += '</tbody>';
   if (jugs.length) {
-    const pts = jugs.map(g => puntos(j, g.id));
+    const pts = jugs.map(g => j.aciertos ? (j.aciertos[g.id] === undefined ? null : j.aciertos[g.id]) : puntos(j, g.id));
     const max = Math.max(...pts.filter(x => x !== null), 0);
     h += '<tfoot><tr><td class="c-partido">Aciertos</td><td class="c-res"></td>'
       + pts.map(x => '<td class="' + (x !== null && x === max && max > 0 ? 'top' : '') + '">' + (x === null ? '–' : x) + '</td>').join('')
@@ -773,7 +782,99 @@ function formularioPronostico(j, inicial, titulo, alGuardar) {
 }
 
 /* ─────────────── Vista: Clasificación ─────────────── */
+/* ─────────────── Histórico y palmarés ─────────────── */
+function selectorTemporadas() {
+  if (!S.hist || !S.hist.temporadas.length) return '';
+  const actual = ((S.datos.config.temporada || '').match(/\d{4}\/\d{2,4}/) || ['Actual'])[0];
+  const ops = [['actual', actual + ' (actual)']].concat(S.hist.temporadas.map(t => [t.id, t.nombre]), [['palmares', '🏆 Palmarés']]);
+  return '<div class="chips temporadas" id="chips-temp">' + ops.map(o => '<button class="chip' + (S.histSel === o[0] ? ' activo' : '') + '" data-temp="' + esc(o[0]) + '">' + esc(o[1]) + '</button>').join('') + '</div>';
+}
+function cargarHistorico() {
+  if (S.hist || S.cargandoHist) return;
+  S.cargandoHist = true;
+  api('historico').then(r => { S.hist = r; S.cargandoHist = false; if (S.vista === 'clasificacion') render(); })
+    .catch(() => { S.cargandoHist = false; });
+}
+function puestos(clas) {
+  let pos = 0;
+  return clas.map((c, i) => { if (i === 0 || c.puntos !== clas[i - 1].puntos) pos = i + 1; return Object.assign({ pos }, c); });
+}
+function vistaTemporadaArchivada(t) {
+  const filas = puestos(t.clasificacion);
+  if (!filas.length) return '<div class="card vacio"><p>Sin clasificación.</p></div>';
+  const max = filas[0].puntos, min = filas[filas.length - 1].puntos;
+  const medallas = ['🥇', '🥈', '🥉'];
+  const escalon = (f, k) => f ? '<div class="escalon e' + (k + 1) + '"><div class="medalla">' + medallas[Math.min(f.pos, 3) - 1] + '</div><div class="nombre">' + esc(f.nombre) + '</div><div class="bloque"><div class="p">' + f.puntos + '</div><div class="pts">PUNTOS</div></div></div>' : '<div></div>';
+  let h = '<div class="podio">' + escalon(filas[1], 1) + escalon(filas[0], 0) + escalon(filas[2], 2) + '</div>';
+  h += '<div class="card"><h2>Clasificación final ' + esc(t.nombre) + '</h2>' + (t.notas ? '<div class="nota-hist">ℹ️ ' + esc(t.notas) + '</div>' : '')
+    + '<table class="clasif"><thead><tr><th>Pos</th><th>Equipo</th><th>Pts</th><th title="Jornadas jugadas">Jug.</th></tr></thead><tbody>';
+  filas.forEach(f => {
+    const cls = f.puntos === max ? 'lider' : (max !== min && f.puntos === min ? 'colista' : '');
+    h += '<tr class="' + cls + '"><td>' + f.pos + 'º</td><td class="nom">' + (f.pos === 1 ? '🏆 ' : '') + esc(f.nombre) + '</td><td class="pts">' + f.puntos + '</td><td>' + (f.jugadas || '–') + '</td></tr>';
+  });
+  h += '</tbody></table><div class="leyenda"><span>🟩 Campeón</span><span>🟥 Colista</span></div></div>';
+  // Jornadas de la temporada
+  const js = S.histJ[t.id];
+  if (!js) {
+    if (!S.histJ['_' + t.id]) {
+      S.histJ['_' + t.id] = true;
+      api('historico', { temporada: t.id }).then(r => { S.histJ[t.id] = r.jornadas; if (S.vista === 'clasificacion') render(); })
+        .catch(e => { S.histJ['_' + t.id] = false; toast(e.message, true); });
+    }
+    return h + '<div class="card"><h3>Jornadas</h3><div class="cargando">Cargando jornadas…</div></div>';
+  }
+  if (!js.length) return h;
+  if (!js.some(j => j.numero === S.histJSel)) S.histJSel = js[js.length - 1].numero;
+  const j = js.find(x => x.numero === S.histJSel);
+  const orden = t.clasificacion.map(c => c.nombre);
+  const nombres = Object.keys(j.pronosticos).sort((a, b) => (orden.indexOf(a) + 1 || 99) - (orden.indexOf(b) + 1 || 99));
+  h += '<div class="card"><h3>Jornadas</h3><div class="chips claros" id="chips-hj" style="padding-top:0">'
+    + js.map(x => '<button class="chip' + (x.numero === j.numero ? ' activo' : '') + '" data-hj="' + x.numero + '">J' + x.numero + '</button>').join('')
+    + '</div>' + tablaBoleto(j, nombres.map(n => ({ id: n, nombre: n }))) + '<p class="muted" style="margin-top:8px">Aciertos tal y como se apuntaron en su día.</p></div>';
+  return h;
+}
+function vistaPalmares() {
+  const ts = S.hist.temporadas.slice().sort((a, b) => a.orden - b.orden);
+  const eq = {};
+  const fila = n => eq[n] || (eq[n] = { nombre: n, oros: 0, platas: 0, bronces: 0, temporadas: 0, titulos: [] });
+  ts.forEach(t => {
+    puestos(t.clasificacion).forEach(f => {
+      const e = fila(f.nombre); e.temporadas++;
+      if (f.pos === 1) { e.oros++; e.titulos.push(t.nombre); } else if (f.pos === 2) e.platas++; else if (f.pos === 3) e.bronces++;
+    });
+  });
+  const lista = Object.values(eq).sort((a, b) => b.oros - a.oros || b.platas - a.platas || b.bronces - a.bronces || a.nombre.localeCompare(b.nombre));
+  let h = '<div class="card"><h2>🏆 Palmarés</h2><p class="muted">Títulos y podios de las temporadas terminadas.</p>'
+    + '<table class="clasif palmares"><thead><tr><th></th><th>Equipo</th><th title="Ligas ganadas">🏆</th><th title="Subcampeón">🥈</th><th title="Tercero">🥉</th><th title="Temporadas jugadas">Temp.</th></tr></thead><tbody>';
+  lista.forEach((e, i) => {
+    h += '<tr class="' + (e.oros && e.oros === lista[0].oros ? 'lider' : '') + '"><td>' + (i + 1) + 'º</td><td class="nom">' + esc(e.nombre)
+      + (e.titulos.length ? '<br><small class="muted" style="font-weight:400">Campeón ' + e.titulos.map(esc).join(', ') + '</small>' : '') + '</td>'
+      + '<td class="pts">' + (e.oros || '–') + '</td><td>' + (e.platas || '–') + '</td><td>' + (e.bronces || '–') + '</td><td>' + e.temporadas + '</td></tr>';
+  });
+  h += '</tbody></table></div><div class="card campeones"><h3>Campeones por temporada</h3><div class="lista">';
+  ts.slice().reverse().forEach(t => {
+    const p = puestos(t.clasificacion);
+    const camp = p.filter(f => f.pos === 1), sub = p.filter(f => f.pos === 2);
+    h += '<div class="item"><div class="info"><b>' + esc(t.nombre) + ' · 🏆 ' + camp.map(f => esc(f.nombre)).join(' y ') + ' <small class="muted">(' + (camp[0] ? camp[0].puntos : 0) + ' pts)</small></b>'
+      + '<small>🥈 ' + (sub.map(f => esc(f.nombre) + ' (' + f.puntos + ')').join(', ') || '–') + '</small></div>'
+      + '<button class="btn btn-claro btn-peq" data-temp="' + esc(t.id) + '">Ver</button></div>';
+  });
+  return h + '</div></div>';
+}
+
 function vistaClasificacion() {
+  cargarHistorico();
+  const sel = selectorTemporadas();
+  if (S.histSel !== 'actual' && S.hist) {
+    if (S.histSel === 'palmares') return sel + vistaPalmares();
+    const t = S.hist.temporadas.find(x => x.id === S.histSel);
+    if (t) return sel + vistaTemporadaArchivada(t);
+    S.histSel = 'actual';
+  }
+  return sel + vistaClasificacionActual();
+}
+
+function vistaClasificacionActual() {
   const filas = clasificacion();
   const js = jornadasQueCuentan();
   if (!filas.length || !js.some(j => nRes(j))) return '<div class="card vacio"><div class="grande">🏆</div><h2>Clasificación</h2><p>Aparecerá en cuanto haya resultados.</p></div>';
@@ -925,10 +1026,27 @@ function adminAjustes() {
     + '<div class="campo"><label>Subtítulo / temporada</label><input id="c-temp" value="' + esc(c.temporada) + '"></div>'
     + '<button class="btn btn-oro" id="c-guardar">💾 Guardar ajustes</button></div>'
     + '<div class="card"><h3>Contraseña de administrador</h3><div class="campo"><label>Nueva contraseña</label><input type="password" id="c-pass" autocomplete="new-password"></div><button class="btn btn-claro" id="c-cambiar">Cambiar contraseña</button></div>'
+    + tarjetaArchivar()
     + '<div class="card"><h3>Importar jornadas históricas</h3><p class="muted">Pega aquí el texto de importación (formato JSON). Las jornadas con el mismo número se sustituyen.</p>'
     + '<div class="campo"><textarea id="c-import" rows="6" placeholder=\'{"jornadas":[...]}\'></textarea></div>'
     + '<div class="acciones" style="margin-top:0"><button class="btn btn-verde" id="c-importar">⬆️ Importar</button><label class="btn btn-claro" style="cursor:pointer">📂 Desde archivo<input type="file" id="c-archivo" accept=".json,application/json" hidden></label></div></div>'
     + '<div class="card"><button class="btn btn-claro btn-bloque" id="c-salir">Cerrar sesión de administrador</button></div>';
+}
+
+function tarjetaArchivar() {
+  const d = S.adminDatos;
+  const m = (d.config.temporada || '').match(/(\d{4})\/(\d{2,4})/);
+  const nombre = m ? m[1] + '/' + m[2] : '';
+  const nueva = m ? 'Temporada ' + (Number(m[1]) + 1) + '/' + String(Number(m[2].slice(-2)) + 1).padStart(2, '0') : '';
+  const jugs = d.jugadores.slice().sort((a, b) => (a.columna || 99) - (b.columna || 99) || a.nombre.localeCompare(b.nombre));
+  return '<div class="card"><h3>📦 Archivar temporada</h3>'
+    + '<p class="muted">Cuando acabe la temporada: guarda la clasificación final y todas las jornadas en el histórico (pestaña Clasificación) y empieza una temporada nueva desde la J1.</p>'
+    + '<div class="rejilla2"><div class="campo"><label>Temporada que se archiva</label><input id="t-nombre" value="' + esc(nombre) + '" placeholder="2026/27"></div>'
+    + '<div class="campo"><label>Subtítulo de la nueva</label><input id="t-nueva" value="' + esc(nueva) + '" placeholder="Temporada 2027/28"></div></div>'
+    + '<label style="font-weight:700;font-size:14px">¿Quién sigue la temporada que viene?</label>'
+    + '<div class="check-jug">' + jugs.map(g => '<label><input type="checkbox" class="t-sigue" value="' + esc(g.id) + '"' + (g.activo ? ' checked' : '') + '> ' + esc(g.nombre) + '</label>').join('') + '</div>'
+    + '<p class="muted" style="margin-top:-6px">Los que siguen conservan su nombre y su PIN. Los nuevos se añaden después en 👥 Jugadores.</p>'
+    + '<button class="btn btn-rojo btn-bloque" id="t-archivar">📦 Archivar y empezar temporada nueva</button></div>';
 }
 
 function adminRegistro() {
@@ -950,6 +1068,16 @@ function enlazar() {
   if (bw) bw.onclick = () => enviarWhatsApp(bw);
   const ba = $('#b-actualizar');
   if (ba) ba.onclick = () => actualizarResultadosWeb(ba);
+  if (S.vista === 'clasificacion') {
+    $('#app').querySelectorAll('[data-temp]').forEach(b => b.onclick = () => { S.histSel = b.dataset.temp; S.histJSel = null; render(); window.scrollTo({ top: 0 }); });
+    const hj = $('#chips-hj');
+    if (hj) {
+      hj.addEventListener('click', e => { const b = e.target.closest('[data-hj]'); if (b) { S.histJSel = Number(b.dataset.hj); render(); } });
+      const act = hj.querySelector('.activo'); if (act) act.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }
+    const ct = $('#chips-temp');
+    if (ct) { const act = ct.querySelector('.activo'); if (act) act.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+  }
   if (S.vista === 'admin') enlazarAdmin();
 }
 
@@ -1067,6 +1195,20 @@ function enlazarAdmin() {
       await api('cambiarContrasena', { token: S.admin, nueva: $('#c-pass').value });
       $('#c-pass').value = ''; toast('Contraseña cambiada');
     });
+    $('#t-archivar').onclick = () => {
+      const nombre = $('#t-nombre').value.trim();
+      if (!nombre) return toast('Pon el nombre de la temporada', true);
+      const siguen = [...document.querySelectorAll('.t-sigue:checked')].map(x => x.value);
+      const abiertas = S.adminDatos.jornadas.filter(j => !j.cerrada && !j.anulada).length;
+      if (!confirm('¿Archivar la temporada ' + nombre + ' y empezar una nueva?\n\nSe guardará la clasificación final y las ' + S.adminDatos.jornadas.length + ' jornadas en el histórico, y la temporada nueva empezará vacía desde la J1.'
+        + (abiertas ? '\n\n⚠️ Hay ' + abiertas + ' jornada abierta: también se archivará.' : '') + '\n\nNo se puede deshacer desde la web.')) return;
+      conCarga($('#t-archivar'), async () => {
+        const r = await api('archivarTemporada', { token: S.admin, nombre, nuevaTemporada: $('#t-nueva').value.trim(), siguen });
+        S.hist = null; S.histJ = {}; S.histSel = 'actual'; S.jSel = null;
+        await recargarAdmin(); render();
+        toast('📦 Temporada ' + r.nombre + ' archivada' + (r.campeon ? ' · 🏆 ' + r.campeon.nombre : ''));
+      });
+    };
     $('#c-archivo').onchange = e => { const f = e.target.files[0]; if (f) f.text().then(t => { $('#c-import').value = t; }); };
     $('#c-importar').onclick = () => conCarga($('#c-importar'), async () => {
       let datos;
@@ -1207,6 +1349,24 @@ function demoApi(accion, p) {
         if (!p.abrir) { if (j.anulada) throw new Error('Esta jornada no se juega.'); if (!j.cierre || new Date(j.cierre) <= ahora) throw new Error('La jornada ya está cerrada.'); j.cierreOficial = j.cierre; j.cierre = ahora.toISOString(); log('Jornada', j.numero, '', 'cerrada a mano', 'admin'); return { numero: j.numero, cerrada: true }; }
         if (!j.cierreOficial) throw new Error('Esta jornada no se cerró a mano. Para cambiar su cierre usa «Editar».'); if (new Date(j.cierreOficial) <= ahora) throw new Error('El cierre oficial ya ha pasado. Usa «Editar» para poner otra hora de cierre.');
         j.cierre = j.cierreOficial; j.cierreOficial = ''; log('Jornada', j.numero, '', 'reabierta', 'admin'); return { numero: j.numero, cerrada: false, cierre: j.cierre }; }
+      case 'historico': {
+        DB.historico = DB.historico || [];
+        if (!p.temporada) return copia({ temporadas: DB.historico.map(t => ({ id: t.id, nombre: t.nombre, orden: t.orden, clasificacion: t.clasificacion, notas: t.notas || '' })).sort((a, b) => b.orden - a.orden) });
+        const t = DB.historico.find(x => x.id === p.temporada); if (!t) throw new Error('Temporada no encontrada.');
+        return copia({ id: t.id, jornadas: t.jornadas });
+      }
+      case 'archivarTemporada': { adm(); DB.historico = DB.historico || [];
+        const id = String(p.nombre).replace(/[^0-9A-Za-z]+/g, '-'); if (DB.historico.some(t => t.id === id)) throw new Error('Ya hay una temporada archivada con ese nombre.');
+        const nom = {}; DB.jugadores.forEach(g => { nom[g.id] = g.nombre; });
+        const tot = {}, jug = {};
+        const jornadas = DB.jornadas.slice().sort((a, b) => a.numero - b.numero).map(j => { const pron = {}, aci = {};
+          Object.keys(j.pronosticos).forEach(gid => { const pr = j.pronosticos[gid]; const n = nom[gid] || gid; let a = 0; j.resultados.forEach((r, i) => { if (r && pr[i] === r) a++; }); pron[n] = pr; aci[n] = a; if (!j.anulada) { tot[n] = (tot[n] || 0) + a; jug[n] = (jug[n] || 0) + 1; } });
+          return { numero: j.numero, partidos: j.partidos, resultados: j.resultados, pronosticos: pron, aciertos: aci, anulada: !!j.anulada }; });
+        const clasificacion = Object.keys(tot).map(n => ({ nombre: n, puntos: tot[n], jugadas: jug[n] })).sort((a, b) => b.puntos - a.puntos);
+        DB.historico.push({ id, nombre: p.nombre, orden: DB.historico.length + 1, clasificacion, notas: '', jornadas });
+        DB.jornadas = []; DB.jugadores.forEach(g => { g.activo = (p.siguen || []).includes(g.id); });
+        if (p.nuevaTemporada) DB.config.temporada = p.nuevaTemporada;
+        log('Temporada', '', '', 'archivada ' + p.nombre, 'admin'); return { id, nombre: p.nombre, jornadas: jornadas.length, campeon: clasificacion[0] || null }; }
       case 'marcarNoJugada': adm(); jor(p.numero).anulada = !!p.anulada; log('Jornada', p.numero, '', p.anulada ? 'marcada como NO SE JUEGA' : 'vuelve a contar', 'admin'); return { ok: true };
       case 'buscarResultados': adm(); throw new Error('En el modo demo no se consulta la web de Loterías.');
       case 'cargarBoleto': adm(); throw new Error('En el modo demo no se consulta la web. Usa "Pegar lista".');
